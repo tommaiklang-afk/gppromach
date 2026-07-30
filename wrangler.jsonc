@@ -1,0 +1,8 @@
+{
+  // Serves the static HTML in ./public as the gppromach site (no Worker code needed).
+  "name": "gppromach",
+  "compatibility_date": "2026-07-30",
+  "assets": {
+    "directory": "./public"
+  }
+}
