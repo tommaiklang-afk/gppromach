@@ -50,6 +50,8 @@
   .btn-red{background:var(--red)}
   .btn-red:hover{background:var(--red-deep)}
   .menu-toggle{display:none;background:none;border:0;font-size:1.5rem;cursor:pointer}
+  .lang-toggle{margin-left:22px;background:none;border:1px solid var(--line);color:var(--ink-soft);padding:6px 13px;border-radius:100px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .2s,color .2s}
+  .lang-toggle:hover{border-color:var(--red);color:var(--red)}
 
   /* ---- Hero ---- */
   .hero{text-align:center;padding:120px 0 96px}
@@ -137,22 +139,23 @@
   @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
 </style>
 </head>
-<body>
+<body data-title="title_home">
 
 <header>
   <div class="wrap">
     <nav>
       <a class="brand" href="#top">
         <span class="logo">GP</span>
-        <span class="brand-name">GP&nbsp;Promach<small>Precision CNC Machining</small></span>
+        <span class="brand-name">GP&nbsp;Promach<small data-i18n="nav_tagline">Precision CNC Machining</small></span>
       </a>
       <div class="navlinks">
-        <a href="index.html">Home</a>
-        <a href="#capabilities">Capabilities</a>
-        <a href="#process">Process</a>
-        <a href="#materials">Materials</a>
-        <a href="contact.html">Contact</a>
+        <a href="index.html" data-i18n="nav_home">Home</a>
+        <a href="#capabilities" data-i18n="nav_capabilities">Capabilities</a>
+        <a href="#process" data-i18n="nav_process">Process</a>
+        <a href="#materials" data-i18n="nav_materials">Materials</a>
+        <a href="contact.html" data-i18n="nav_contact">Contact</a>
       </div>
+      <button class="lang-toggle" type="button" data-lang-toggle>ไทย</button>
       <button class="menu-toggle" aria-label="Menu">☰</button>
     </nav>
   </div>
@@ -163,19 +166,19 @@
   <!-- HERO -->
   <section class="hero">
     <div class="wrap">
-      <div class="eyebrow">Prototype to production</div>
-      <h1>Machined to the <span class="accent">micron.</span><br />Delivered on time.</h1>
-      <p>GP Promach turns your drawings into precision-machined parts — tight tolerances, clean finishes, and repeatable quality across every run.</p>
+      <div class="eyebrow" data-i18n="hero_eyebrow">Prototype to production</div>
+      <h1 data-i18n="hero_h1">Machined to the <span class="accent">micron.</span><br />Delivered on time.</h1>
+      <p data-i18n="hero_p">GP Promach turns your drawings into precision-machined parts — tight tolerances, clean finishes, and repeatable quality across every run.</p>
       <div class="hero-cta">
-        <a class="btn btn-red" href="contact.html">Request a quote</a>
-        <a class="link-arrow" href="#capabilities">See our capabilities →</a>
+        <a class="btn btn-red" href="contact.html" data-i18n="hero_cta">Request a quote</a>
+        <a class="link-arrow" href="#capabilities" data-i18n="hero_link">See our capabilities →</a>
       </div>
 
       <div class="spec-strip">
-        <div class="spec"><div class="num">±0.005<span style="font-size:1rem"> mm</span></div><div class="lbl">Achievable tolerance</div></div>
-        <div class="spec"><div class="num">5-axis</div><div class="lbl">Milling & turning</div></div>
-        <div class="spec"><div class="num">50+</div><div class="lbl">Materials machined</div></div>
-        <div class="spec"><div class="num">1–10,000</div><div class="lbl">Parts per order</div></div>
+        <div class="spec"><div class="num">±0.005<span style="font-size:1rem"> mm</span></div><div class="lbl" data-i18n="spec_tol">Achievable tolerance</div></div>
+        <div class="spec"><div class="num" data-i18n="spec_mill_num">5-axis</div><div class="lbl" data-i18n="spec_mill">Milling & turning</div></div>
+        <div class="spec"><div class="num">50+</div><div class="lbl" data-i18n="spec_mat">Materials machined</div></div>
+        <div class="spec"><div class="num">1–10,000</div><div class="lbl" data-i18n="spec_parts">Parts per order</div></div>
       </div>
     </div>
   </section>
@@ -184,40 +187,40 @@
   <section id="capabilities">
     <div class="wrap">
       <div class="section-head">
-        <div class="eyebrow">Capabilities</div>
-        <h2>Our mission</h2>
-        <p>"Make your dreams come true."</p>
+        <div class="eyebrow" data-i18n="cap_eyebrow">Capabilities</div>
+        <h2 data-i18n="cap_h2">Our mission</h2>
+        <p data-i18n="cap_p">"Make your dreams come true."</p>
       </div>
       <div class="grid">
         <div class="card">
           <div class="ico"><span></span></div>
-          <h3>CNC Milling</h3>
-          <p>3-, 4-, and 5-axis milling for complex geometries, pockets, and contoured surfaces held to tight tolerances.</p>
+          <h3 data-i18n="c1_h">CNC Milling</h3>
+          <p data-i18n="c1_p">3-, 4-, and 5-axis milling for complex geometries, pockets, and contoured surfaces held to tight tolerances.</p>
         </div>
         <div class="card">
           <div class="ico"><span></span></div>
-          <h3>CNC Turning</h3>
-          <p>Precision turned parts, shafts, and threaded components with live tooling for combined milling and turning.</p>
+          <h3 data-i18n="c2_h">CNC Turning</h3>
+          <p data-i18n="c2_p">Precision turned parts, shafts, and threaded components with live tooling for combined milling and turning.</p>
         </div>
         <div class="card">
           <div class="ico"><span></span></div>
-          <h3>Prototyping</h3>
-          <p>Fast, accurate one-off and low-volume parts so you can validate a design before committing to production.</p>
+          <h3 data-i18n="c3_h">Prototyping</h3>
+          <p data-i18n="c3_p">Fast, accurate one-off and low-volume parts so you can validate a design before committing to production.</p>
         </div>
         <div class="card">
           <div class="ico"><span></span></div>
-          <h3>Production Runs</h3>
-          <p>Repeatable batch machining with documented process control, so part #1 and part #10,000 match.</p>
+          <h3 data-i18n="c4_h">Production Runs</h3>
+          <p data-i18n="c4_p">Repeatable batch machining with documented process control, so part #1 and part #10,000 match.</p>
         </div>
         <div class="card">
           <div class="ico"><span></span></div>
-          <h3>Finishing</h3>
-          <p>Deburring, anodizing, plating, and surface treatments coordinated in-house so parts arrive ready to use.</p>
+          <h3 data-i18n="c5_h">Finishing</h3>
+          <p data-i18n="c5_p">Deburring, anodizing, plating, and surface treatments coordinated in-house so parts arrive ready to use.</p>
         </div>
         <div class="card">
           <div class="ico"><span></span></div>
-          <h3>Inspection</h3>
-          <p>Dimensional inspection and reporting on every job, with full traceability when your application demands it.</p>
+          <h3 data-i18n="c6_h">Inspection</h3>
+          <p data-i18n="c6_p">Dimensional inspection and reporting on every job, with full traceability when your application demands it.</p>
         </div>
       </div>
     </div>
@@ -227,15 +230,15 @@
   <section id="process" class="alt">
     <div class="wrap">
       <div class="section-head">
-        <div class="eyebrow">How it works</div>
-        <h2>From drawing to doorstep.</h2>
-        <p>A clear four-step path with a real person on your job from quote to delivery.</p>
+        <div class="eyebrow" data-i18n="proc_eyebrow">How it works</div>
+        <h2 data-i18n="proc_h2">From drawing to doorstep.</h2>
+        <p data-i18n="proc_p">A clear four-step path with a real person on your job from quote to delivery.</p>
       </div>
       <div class="steps">
-        <div class="step"><span class="n">Step 01</span><h3>Send your files</h3><p>Upload a drawing or 3D model. We review geometry, tolerances, and material.</p></div>
-        <div class="step"><span class="n">Step 02</span><h3>Get a quote</h3><p>A firm price and lead time — typically within one business day.</p></div>
-        <div class="step"><span class="n">Step 03</span><h3>We machine it</h3><p>Your parts are cut, finished, and inspected against your spec.</p></div>
-        <div class="step"><span class="n">Step 04</span><h3>Delivered</h3><p>Inspected parts shipped to your door, ready to install or assemble.</p></div>
+        <div class="step"><span class="n" data-i18n="s1_n">Step 01</span><h3 data-i18n="s1_h">Send your files</h3><p data-i18n="s1_p">Upload a drawing or 3D model. We review geometry, tolerances, and material.</p></div>
+        <div class="step"><span class="n" data-i18n="s2_n">Step 02</span><h3 data-i18n="s2_h">Get a quote</h3><p data-i18n="s2_p">A firm price and lead time — typically within one business day.</p></div>
+        <div class="step"><span class="n" data-i18n="s3_n">Step 03</span><h3 data-i18n="s3_h">We machine it</h3><p data-i18n="s3_p">Your parts are cut, finished, and inspected against your spec.</p></div>
+        <div class="step"><span class="n" data-i18n="s4_n">Step 04</span><h3 data-i18n="s4_h">Delivered</h3><p data-i18n="s4_p">Inspected parts shipped to your door, ready to install or assemble.</p></div>
       </div>
     </div>
   </section>
@@ -244,9 +247,9 @@
   <section id="materials">
     <div class="wrap">
       <div class="section-head">
-        <div class="eyebrow">Materials</div>
-        <h2>Metals and plastics, machined to spec.</h2>
-        <p>A selection of what we work with regularly. Need something else? Ask — the list is longer than this.</p>
+        <div class="eyebrow" data-i18n="mat_eyebrow">Materials</div>
+        <h2 data-i18n="mat_h2">Metals and plastics, machined to spec.</h2>
+        <p data-i18n="mat_p">A selection of what we work with regularly. Need something else? Ask — the list is longer than this.</p>
       </div>
       <div class="chips">
         <span class="chip">Aluminum 6061</span>
@@ -275,25 +278,25 @@
       <div class="foot-brand">
         <a class="brand" href="#top">
           <span class="logo">GP</span>
-          <span class="brand-name">GP&nbsp;Promach<small>Precision CNC Machining</small></span>
+          <span class="brand-name">GP&nbsp;Promach<small data-i18n="nav_tagline">Precision CNC Machining</small></span>
         </a>
-        <p>Precision CNC machining from prototype to production. Si Racha, Chonburi, Thailand.</p>
+        <p data-i18n="foot_desc">Precision CNC machining from prototype to production. Si Racha, Chonburi, Thailand.</p>
       </div>
       <div class="foot-col">
-        <h4>Company</h4>
-        <a href="#capabilities">Capabilities</a>
-        <a href="#process">Process</a>
-        <a href="#materials">Materials</a>
+        <h4 data-i18n="foot_company">Company</h4>
+        <a href="#capabilities" data-i18n="nav_capabilities">Capabilities</a>
+        <a href="#process" data-i18n="nav_process">Process</a>
+        <a href="#materials" data-i18n="nav_materials">Materials</a>
       </div>
       <div class="foot-col">
-        <h4>Contact</h4>
+        <h4 data-i18n="nav_contact">Contact</h4>
         <a href="tel:+66993269632">099-326-9632 · Ekkaphong</a>
         <a href="tel:+66921522226">092-152-2226 · Sompong</a>
         <a href="mailto:ekkaphongdm@gmail.com">ekkaphongdm@gmail.com</a>
       </div>
     </div>
     <div class="foot-bottom">
-      <span>© 2026 GP Promach Co., Ltd. All rights reserved.</span>
+      <span data-i18n="foot_copy">© 2026 GP Promach Co., Ltd. All rights reserved.</span>
       <span>gppromach.com</span>
     </div>
   </div>
@@ -308,5 +311,6 @@
     if(!open){l.style.position='absolute';l.style.flexDirection='column';l.style.top='64px';l.style.left='0';l.style.right='0';l.style.background='#fff';l.style.padding='18px 24px';l.style.gap='18px';l.style.borderBottom='1px solid var(--line)';}
   });
 </script>
+<script src="lang.js"></script>
 </body>
 </html>
