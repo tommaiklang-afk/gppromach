@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Contact — GP Promach</title>
+<meta name="description" content="Get in touch with GP Promach — reach our contact people directly for a quote or lead time." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#111214;
+    --ink-soft:#5b5f66;
+    --line:#e6e7e9;
+    --bg:#ffffff;
+    --bg-alt:#f5f6f7;
+    --bg-dark:#0d0e10;
+    --red:#e0142c;
+    --red-deep:#b30f22;
+    --radius:14px;
+    --wrap:1120px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.logo-mark{font-family:'Space Grotesk','Inter',sans-serif;letter-spacing:-.02em;line-height:1.05}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px}
+  .eyebrow{font-size:.8rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--red)}
+
+  /* ---- Nav ---- */
+  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.8);backdrop-filter:saturate(180%) blur(18px);border-bottom:1px solid var(--line)}
+  nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:600}
+  .logo{width:38px;height:38px;border-radius:50%;background:var(--red);display:grid;place-items:center;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.02em;box-shadow:0 2px 10px rgba(224,20,44,.35)}
+  .brand-name{font-size:1.05rem}
+  .brand-name small{display:block;font-size:.68rem;font-weight:500;color:var(--ink-soft);letter-spacing:.08em;text-transform:uppercase;line-height:1}
+  .navlinks{display:flex;gap:34px;font-size:.92rem;font-weight:500}
+  .navlinks a{color:var(--ink-soft);transition:color .2s}
+  .navlinks a:hover{color:var(--ink)}
+  .navlinks a.active{color:var(--ink)}
+  .menu-toggle{display:none;background:none;border:0;font-size:1.5rem;cursor:pointer}
+
+  /* ---- Page header ---- */
+  .page-head{text-align:center;padding:96px 0 20px}
+  .page-head .eyebrow{margin-bottom:18px}
+  .page-head h1{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:700}
+  .page-head p{max-width:600px;margin:22px auto 0;font-size:clamp(1.02rem,2vw,1.18rem);color:var(--ink-soft)}
+
+  section{padding:40px 0 96px}
+
+  /* ---- Contact people ---- */
+  .people{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:20px;max-width:820px;margin-left:auto;margin-right:auto}
+  .person{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:30px 28px;text-align:left}
+  .person .role{font-size:.78rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--red);margin-bottom:10px}
+  .person h3{font-size:1.3rem;font-weight:600}
+  .person .th{color:var(--ink-soft);font-size:.95rem;margin-bottom:18px}
+  .person a{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:.98rem;font-weight:500;padding:7px 0}
+  .person a:hover{color:var(--red)}
+  .person .ic{width:18px;text-align:center;color:var(--red)}
+  .addr{margin-top:36px;text-align:center;color:var(--ink-soft);font-size:.98rem;line-height:1.5}
+  .addr strong{color:var(--ink);font-weight:600}
+  .back{display:inline-flex;align-items:center;gap:8px;margin-top:40px;color:var(--red);font-weight:600;font-size:.95rem}
+  .back:hover{gap:12px}
+  .back-wrap{text-align:center}
+
+  /* ---- Footer ---- */
+  footer{border-top:1px solid var(--line);padding:56px 0 40px;font-size:.9rem;color:var(--ink-soft)}
+  .foot-grid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:30px}
+  .foot-brand{max-width:280px}
+  .foot-brand p{margin-top:14px}
+  .foot-col h4{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink);margin-bottom:14px}
+  .foot-col a{display:block;margin-bottom:9px;color:var(--ink-soft);transition:color .2s}
+  .foot-col a:hover{color:var(--red)}
+  .foot-bottom{margin-top:44px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:.83rem}
+
+  @media(max-width:860px){
+    .navlinks{display:none}
+    .menu-toggle{display:block}
+  }
+  @media(max-width:520px){
+    .people{grid-template-columns:1fr}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
+</style>
+</head>
+<body id="top">
+
+<header>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="index.html">
+        <span class="logo">GP</span>
+        <span class="brand-name">GP&nbsp;Promach<small>Precision CNC Machining</small></span>
+      </a>
+      <div class="navlinks">
+        <a href="index.html#capabilities">Capabilities</a>
+        <a href="index.html#process">Process</a>
+        <a href="index.html#materials">Materials</a>
+        <a href="contact.html" class="active">Contact</a>
+      </div>
+      <button class="menu-toggle" aria-label="Menu">☰</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <div class="page-head">
+    <div class="wrap">
+      <div class="eyebrow">Get in touch</div>
+      <h1>Have a part to make?</h1>
+      <p>Send us your drawing and we'll come back with a price and lead time — usually within a day. Reach either of us directly.</p>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="people">
+        <div class="person">
+          <div class="role">Contact</div>
+          <h3>Ekkaphong Rotruedi</h3>
+          <div class="th">เอกพงศ์ รอดฤดี</div>
+          <a href="tel:+66993269632"><span class="ic">✆</span> 099-326-9632</a>
+          <a href="mailto:ekkaphongdm@gmail.com"><span class="ic">✉</span> ekkaphongdm@gmail.com</a>
+        </div>
+        <div class="person">
+          <div class="role">Contact</div>
+          <h3>Sompong Rakna</h3>
+          <div class="th">สมพงษ์ รักนา</div>
+          <a href="tel:+66921522226"><span class="ic">✆</span> 092-152-2226</a>
+          <a href="mailto:pongrakna99@gmail.com"><span class="ic">✉</span> pongrakna99@gmail.com</a>
+        </div>
+      </div>
+
+      <p class="addr">
+        <strong>GP Promach Co., Ltd.</strong><br />
+        115/58 Moo 10, Nong Kham, Si Racha, Chonburi 20230, Thailand
+      </p>
+
+      <div class="back-wrap">
+        <a class="back" href="index.html">← Back to home</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="index.html">
+          <span class="logo">GP</span>
+          <span class="brand-name">GP&nbsp;Promach<small>Precision CNC Machining</small></span>
+        </a>
+        <p>Precision CNC machining from prototype to production. Si Racha, Chonburi, Thailand.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Company</h4>
+        <a href="index.html#capabilities">Capabilities</a>
+        <a href="index.html#process">Process</a>
+        <a href="index.html#materials">Materials</a>
+      </div>
+      <div class="foot-col">
+        <h4>Contact</h4>
+        <a href="tel:+66993269632">099-326-9632 · Ekkaphong</a>
+        <a href="tel:+66921522226">092-152-2226 · Sompong</a>
+        <a href="mailto:ekkaphongdm@gmail.com">ekkaphongdm@gmail.com</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 GP Promach Co., Ltd. All rights reserved.</span>
+      <span>gppromach.com</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
