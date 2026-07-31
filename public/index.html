@@ -148,6 +148,19 @@
     .spec-strip{margin-top:44px}
   }
   @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
+
+  /* ---- Badge images + admin edit mode ---- */
+  .ico .badge-img{width:100%;height:100%;object-fit:cover;border-radius:11px;display:block}
+  .ico.uploading{opacity:.45}
+  body.edit-mode .ico[data-badge]{cursor:pointer;outline:2px dashed var(--red);outline-offset:3px}
+  body.edit-mode .ico[data-badge]:hover{outline-color:var(--red-deep)}
+  body.has-admin-bar{padding-bottom:64px}
+  .admin-bar{position:fixed;bottom:0;left:0;right:0;z-index:200;background:#111214;color:#fff;display:flex;align-items:center;gap:16px;padding:10px 18px;font-size:.9rem;flex-wrap:wrap}
+  .admin-bar .admin-btn{background:var(--red);color:#fff;border:0;border-radius:100px;padding:8px 16px;font-weight:600;cursor:pointer;font-family:inherit}
+  .admin-bar .admin-btn:hover{background:var(--red-deep)}
+  .admin-bar .admin-hint{color:#a9adb4}
+  .admin-bar .admin-link{color:#cbd5c0;margin-left:auto}
+  .foot-admin{opacity:.55}
 </style>
 </head>
 <body data-title="title_home">
@@ -323,11 +336,12 @@
     </div>
     <div class="foot-bottom">
       <span data-i18n="foot_copy">© 2026 GP Promach Co., Ltd. All rights reserved.</span>
-      <span>gppromach.com</span>
+      <span>gppromach.com · <a class="foot-admin" href="/admin/login">Admin</a></span>
     </div>
   </div>
 </footer>
 
 <script src="lang.js"></script>
+<script src="admin.js"></script>
 </body>
 </html>

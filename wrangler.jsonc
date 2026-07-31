@@ -1,8 +1,17 @@
 {
-  // Serves the static HTML in ./public as the gppromach site (no Worker code needed).
+  // Serves ./public as static assets, plus a Worker (src/worker.js) that adds the
+  // badge image API. Admin uploads are gated by Cloudflare Access (Google login).
   "name": "gppromach",
   "compatibility_date": "2026-07-30",
+  "main": "src/worker.js",
   "assets": {
     "directory": "./public"
+  },
+  "kv_namespaces": [
+    { "binding": "BADGES", "id": "19fa2b6021114cd9b33ac5417b787666" }
+  ],
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": ""
   }
 }
