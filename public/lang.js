@@ -8,6 +8,7 @@
       nav_capabilities: "Capabilities",
       nav_process: "Process",
       nav_installation: "Installation",
+      nav_trading: "Trading & Sourcing",
       nav_contact: "Contact",
 
       hero_eyebrow: "Prototype to production",
@@ -66,6 +67,18 @@
       i4_h: "Maintenance & Support",
       i4_p: "Ongoing maintenance, adjustments, and replacement parts to keep everything running smoothly.",
 
+      trade_eyebrow: "Trading & Sourcing",
+      trade_h2: "More than a machine shop — your supply partner.",
+      trade_p: "Beyond machining, we source and supply the materials, tooling, and industrial parts our customers need — so you can get more from a single partner.",
+      t1_h: "Raw Material Supply",
+      t1_p: "Metals and engineering plastics supplied as stock or cut to size, ready for your next job.",
+      t2_h: "Tooling & Consumables",
+      t2_p: "Cutting tools, inserts, and workholding from trusted brands, kept in stock so your shop never waits.",
+      t3_h: "Parts & Components",
+      t3_p: "Bearings, fasteners, fittings, and standard components sourced and delivered on demand.",
+      t4_h: "Sourcing & Import",
+      t4_p: "Hard-to-find parts and equipment located, imported, and handled end to end for you.",
+
       foot_desc: "Precision CNC machining from prototype to production. Si Racha, Chonburi, Thailand.",
       foot_company: "Company",
       foot_copy: "© 2026 GP Promach Co., Ltd. All rights reserved.",
@@ -85,6 +98,7 @@
       nav_capabilities: "ความสามารถ",
       nav_process: "ขั้นตอน",
       nav_installation: "การติดตั้ง",
+      nav_trading: "การค้าและการจัดหา",
       nav_contact: "ติดต่อ",
 
       hero_eyebrow: "ตั้งแต่ต้นแบบจนถึงการผลิตจริง",
@@ -142,6 +156,18 @@
       i3_p: "ตรวจสอบการทำงานและเดินเครื่อง เพื่อให้อุปกรณ์ของคุณทำงานได้อย่างถูกต้องตั้งแต่วันแรก",
       i4_h: "บำรุงรักษาและดูแล",
       i4_p: "บริการบำรุงรักษา ปรับตั้ง และอะไหล่ทดแทนอย่างต่อเนื่อง เพื่อให้ทุกอย่างทำงานได้อย่างราบรื่น",
+
+      trade_eyebrow: "การค้าและการจัดหา",
+      trade_h2: "มากกว่าโรงกลึง — เราคือพาร์ทเนอร์ด้านการจัดหา",
+      trade_p: "นอกเหนือจากงานกลึง เรายังจัดหาและจำหน่ายวัสดุ เครื่องมือ และชิ้นส่วนอุตสาหกรรมที่ลูกค้าต้องการ ให้คุณได้มากกว่าจากพาร์ทเนอร์รายเดียว",
+      t1_h: "จัดหาวัตถุดิบ",
+      t1_p: "โลหะและพลาสติกวิศวกรรม จำหน่ายเป็นแท่ง/แผ่นหรือตัดตามขนาด พร้อมสำหรับงานถัดไปของคุณ",
+      t2_h: "เครื่องมือและวัสดุสิ้นเปลือง",
+      t2_p: "ดอกกัด เม็ดมีด และอุปกรณ์จับยึดจากแบรนด์ที่เชื่อถือได้ มีพร้อมส่งเพื่อให้งานของคุณไม่สะดุด",
+      t3_h: "ชิ้นส่วนและอะไหล่",
+      t3_p: "ตลับลูกปืน สกรู ข้อต่อ และชิ้นส่วนมาตรฐาน จัดหาและจัดส่งตามความต้องการ",
+      t4_h: "จัดหาและนำเข้า",
+      t4_p: "ค้นหาชิ้นส่วนและอุปกรณ์ที่หายาก นำเข้าและดูแลให้ครบวงจร",
 
       foot_desc: "งานกลึง CNC ความแม่นยำสูง ตั้งแต่ต้นแบบจนถึงการผลิตจริง ศรีราชา ชลบุรี ประเทศไทย",
       foot_company: "บริษัท",
