@@ -347,15 +347,6 @@
   </div>
 </footer>
 
-<script>
-  // simple mobile menu: reveal nav links inline
-  document.querySelector('.menu-toggle').addEventListener('click',function(){
-    var l=document.querySelector('.navlinks');
-    var open = l.style.display==='flex';
-    l.style.display = open ? 'none':'flex';
-    if(!open){l.style.position='absolute';l.style.flexDirection='column';l.style.top='64px';l.style.left='0';l.style.right='0';l.style.background='#fff';l.style.padding='18px 24px';l.style.gap='18px';l.style.borderBottom='1px solid var(--line)';}
-  });
-</script>
 <script src="lang.js"></script>
 </body>
 </html>

@@ -204,6 +204,27 @@
     try { localStorage.setItem("lang", lang); } catch (e) {}
   }
 
+  function wireMobileMenu() {
+    var toggle = document.querySelector(".menu-toggle");
+    var links = document.querySelector(".navlinks");
+    if (!toggle || !links) return;
+    toggle.addEventListener("click", function () {
+      var open = links.style.display === "flex";
+      links.style.display = open ? "none" : "flex";
+      if (!open) {
+        links.style.position = "absolute";
+        links.style.flexDirection = "column";
+        links.style.top = "64px";
+        links.style.left = "0";
+        links.style.right = "0";
+        links.style.background = "#fff";
+        links.style.padding = "18px 24px";
+        links.style.gap = "18px";
+        links.style.borderBottom = "1px solid var(--line)";
+      }
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     apply(current);
     var buttons = document.querySelectorAll("[data-lang-toggle]");
@@ -212,5 +233,6 @@
         apply(current === "en" ? "th" : "en");
       });
     }
+    wireMobileMenu();
   });
 })();
