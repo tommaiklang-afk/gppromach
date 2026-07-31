@@ -17,5 +17,6 @@
     <use href="#t" transform="rotate(300)"/>
     <use href="#t" transform="rotate(330)"/>
   </g>
-  <text y="2" text-anchor="middle" dominant-baseline="central" font-weight="700" letter-spacing="-3" font-size="72" fill="#2E3338">GP</text>
+  <circle r="64" fill="none" stroke="#5C6367" stroke-width="4"/>
+  <text y="2" text-anchor="middle" dominant-baseline="central" font-weight="700" letter-spacing="-3" font-size="70" fill="#2E3338">GP</text>
 </svg>
