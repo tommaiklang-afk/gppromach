@@ -87,9 +87,10 @@
         toggle.textContent = editMode ? "Turn off edit mode" : "Turn on edit mode";
         hint.style.display = editMode ? "" : "none";
         setTextEditing(editMode);
+        if (!editMode) hideBadgeBtn(true);
       });
       var hint = el("span", "admin-hint",
-        "Click a badge to upload an image. Click any heading or paragraph to edit it (saves automatically in the current language). Hover an edited field and click ↺ Reset to restore its default.");
+        "Click a badge panel to add or replace its image (hover it and click ✕ Remove to clear it). Click any heading or paragraph to edit it — changes save automatically in the current language; use ↺ Reset to restore a default.");
       hint.style.display = "none";
       bar.appendChild(toggle);
       bar.appendChild(hint);
@@ -154,6 +155,82 @@
         if (ico) ico.classList.remove("uploading");
         alert("Upload failed: " + err.message);
       });
+  }
+
+  // ---- Badge remove (floating ✕ button on hover) ----
+  var badgeBtn = null;
+  var badgeTarget = null;
+  var badgeHideTimer = null;
+
+  function onIcoEnter() {
+    if (!editMode || !(role === "owner" || role === "admin")) return;
+    showBadgeBtn(this);
+  }
+  function onIcoLeave() { hideBadgeBtn(); }
+
+  function ensureBadgeBtn() {
+    if (badgeBtn) return badgeBtn;
+    badgeBtn = el("button", "gp-badge-remove", "✕ Remove");
+    badgeBtn.type = "button";
+    badgeBtn.addEventListener("mousedown", function (e) { e.preventDefault(); });
+    badgeBtn.addEventListener("mouseenter", function () { clearTimeout(badgeHideTimer); });
+    badgeBtn.addEventListener("mouseleave", function () { hideBadgeBtn(); });
+    badgeBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (badgeTarget) removeBadge(badgeTarget);
+    });
+    document.body.appendChild(badgeBtn);
+    return badgeBtn;
+  }
+
+  function showBadgeBtn(ico) {
+    var key = ico.getAttribute("data-badge");
+    if (!manifest[key]) { hideBadgeBtn(true); return; } // nothing to remove
+    clearTimeout(badgeHideTimer);
+    badgeTarget = ico;
+    var btn = ensureBadgeBtn();
+    btn.classList.add("show");
+    var r = ico.getBoundingClientRect();
+    btn.style.left = (r.left + window.pageXOffset + r.width - 8) + "px";
+    btn.style.top = (r.top + window.pageYOffset + 8) + "px";
+  }
+
+  function hideBadgeBtn(now) {
+    clearTimeout(badgeHideTimer);
+    if (now) { if (badgeBtn) badgeBtn.classList.remove("show"); badgeTarget = null; return; }
+    badgeHideTimer = setTimeout(function () {
+      if (badgeBtn) badgeBtn.classList.remove("show");
+      badgeTarget = null;
+    }, 140);
+  }
+
+  function removeBadge(ico) {
+    var key = ico.getAttribute("data-badge");
+    hideBadgeBtn(true);
+    ico.classList.add("uploading");
+    fetch("/admin/delete", { method: "POST", headers: { "x-badge-key": key } })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        ico.classList.remove("uploading");
+        if (res.ok && res.j && res.j.ok) {
+          delete manifest[key];
+          clearBadge(ico);
+        } else {
+          alert("Remove failed: " + ((res.j && res.j.error) || "unknown error"));
+        }
+      })
+      .catch(function (err) {
+        ico.classList.remove("uploading");
+        alert("Remove failed: " + err.message);
+      });
+  }
+
+  // Revert an .ico back to its empty placeholder square.
+  function clearBadge(ico) {
+    var img = ico.querySelector("img.badge-img");
+    if (img) img.parentNode.removeChild(img);
+    if (!ico.querySelector("span")) ico.appendChild(document.createElement("span"));
   }
 
   // ---- Inline text editing ----
@@ -396,7 +473,11 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     var icos = keyedIcos();
-    for (var i = 0; i < icos.length; i++) icos[i].addEventListener("click", onIcoClick);
+    for (var i = 0; i < icos.length; i++) {
+      icos[i].addEventListener("click", onIcoClick);
+      icos[i].addEventListener("mouseenter", onIcoEnter);
+      icos[i].addEventListener("mouseleave", onIcoLeave);
+    }
     loadBadges(icos);
     checkSession();
   });
