@@ -3,11 +3,14 @@
 // owner approves them. Owner/admins get an edit toggle; the owner can manage admins.
 (function () {
   var manifest = {};
+  var cards = {};        // { section: [cardId, ...] } — admin-created cards
   var role = null;       // "owner" | "admin" | "pending" | null
   var email = "";
   var editMode = false;
   var fileInput = null;
   var pendingKey = null;
+
+  var CARD_SECTIONS = ["capabilities", "installation", "design", "trading"];
 
   function keyedIcos() {
     var out = [];
@@ -36,18 +39,145 @@
     img.src = "/badges/" + encodeURIComponent(key) + "?v=" + (v || Date.now());
   }
 
-  function applyManifest(icos) {
+  // Render every badge slot currently in the DOM (built-in and dynamic cards).
+  function applyManifest() {
+    var icos = document.querySelectorAll(".ico[data-badge]");
     for (var i = 0; i < icos.length; i++) {
       var key = icos[i].getAttribute("data-badge");
       if (manifest[key]) renderBadge(icos[i], key, manifest[key].updatedAt);
     }
   }
 
-  function loadBadges(icos) {
+  function loadBadges() {
     return fetch("/api/badges", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : {}; })
-      .then(function (m) { manifest = m || {}; applyManifest(icos); })
+      .then(function (m) { manifest = m || {}; applyManifest(); })
       .catch(function () {});
+  }
+
+  // ---- Admin-created cards ----
+  function loadCards() {
+    return fetch("/api/cards", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d) { cards = d; renderAllCards(); } })
+      .catch(function () {});
+  }
+
+  function gridFor(section) {
+    return document.querySelector("section#" + section + " .grid");
+  }
+
+  function insertCard(grid, cardEl) {
+    var addTile = grid.querySelector(".gp-add-card");
+    if (addTile) grid.insertBefore(cardEl, addTile);
+    else grid.appendChild(cardEl);
+  }
+
+  function buildCard(id) {
+    var card = el("div", "card");
+    card.setAttribute("data-dyn", "");
+    card.setAttribute("data-card-id", id);
+
+    var ico = el("div", "ico");
+    ico.setAttribute("data-badge", id);
+    ico.appendChild(document.createElement("span"));
+    ico.addEventListener("click", onIcoClick);
+    ico.addEventListener("mouseenter", onIcoEnter);
+    ico.addEventListener("mouseleave", onIcoLeave);
+    card.appendChild(ico);
+
+    var h = el("h3");
+    h.setAttribute("data-i18n", id + ":h");
+    card.appendChild(h);
+
+    var p = el("p");
+    p.setAttribute("data-i18n", id + ":p");
+    card.appendChild(p);
+
+    var del = el("button", "gp-card-del", "🗑");
+    del.type = "button";
+    del.title = "Delete this card";
+    del.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      removeCard(id, card);
+    });
+    card.appendChild(del);
+
+    return card;
+  }
+
+  // Re-render all dynamic cards from the current `cards` state.
+  function renderAllCards() {
+    for (var s = 0; s < CARD_SECTIONS.length; s++) {
+      var grid = gridFor(CARD_SECTIONS[s]);
+      if (!grid) continue;
+      var existing = grid.querySelectorAll(".card[data-dyn]");
+      for (var e = 0; e < existing.length; e++) existing[e].parentNode.removeChild(existing[e]);
+      var ids = cards[CARD_SECTIONS[s]] || [];
+      for (var i = 0; i < ids.length; i++) insertCard(grid, buildCard(ids[i]));
+    }
+    applyManifest();
+    if (window.gpContent) window.gpContent.refresh();
+    if (editMode) setTextEditing(true);
+  }
+
+  // "+ Add card" tiles, one per section (created for editors, shown in edit mode).
+  function setupAddTiles() {
+    for (var s = 0; s < CARD_SECTIONS.length; s++) {
+      var section = CARD_SECTIONS[s];
+      var grid = gridFor(section);
+      if (!grid || grid.querySelector(".gp-add-card")) continue;
+      var btn = el("button", "gp-add-card", "+ Add card");
+      btn.type = "button";
+      btn.setAttribute("data-section", section);
+      btn.addEventListener("click", function () { addCard(this.getAttribute("data-section")); });
+      grid.appendChild(btn);
+    }
+  }
+
+  function addCard(section) {
+    post("/admin/cards/add", { section: section })
+      .then(function (res) {
+        if (!res || !res.ok) { alert("Add failed: " + ((res && res.error) || "unknown error")); return; }
+        var id = res.id;
+        if (!cards[section]) cards[section] = [];
+        cards[section].push(id);
+        if (window.gpContent) {
+          window.gpContent.setOverride("en", id + ":h", res.h);
+          window.gpContent.setOverride("en", id + ":p", res.p);
+          window.gpContent.setOverride("th", id + ":h", res.h);
+          window.gpContent.setOverride("th", id + ":p", res.p);
+        }
+        var card = buildCard(id);
+        insertCard(gridFor(section), card);
+        if (window.gpContent) window.gpContent.refresh();
+        if (editMode) setTextEditing(true);
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+      })
+      .catch(function (err) { alert("Add failed: " + err.message); });
+  }
+
+  function removeCard(id, cardEl) {
+    if (!window.confirm("Delete this card? This can't be undone.")) return;
+    post("/admin/cards/remove", { id: id })
+      .then(function (res) {
+        if (!res || !res.ok) { alert("Delete failed: " + ((res && res.error) || "unknown error")); return; }
+        for (var s = 0; s < CARD_SECTIONS.length; s++) {
+          var list = cards[CARD_SECTIONS[s]] || [];
+          var i = list.indexOf(id);
+          if (i !== -1) list.splice(i, 1);
+        }
+        delete manifest[id];
+        if (window.gpContent) {
+          window.gpContent.setOverride("en", id + ":h", "");
+          window.gpContent.setOverride("en", id + ":p", "");
+          window.gpContent.setOverride("th", id + ":h", "");
+          window.gpContent.setOverride("th", id + ":p", "");
+        }
+        if (cardEl && cardEl.parentNode) cardEl.parentNode.removeChild(cardEl);
+      })
+      .catch(function (err) { alert("Delete failed: " + err.message); });
   }
 
   function checkSession() {
@@ -90,10 +220,11 @@
         if (!editMode) hideBadgeBtn(true);
       });
       var hint = el("span", "admin-hint",
-        "Click a badge panel to add or replace its image (hover it and click ✕ Remove to clear it). Click any heading or paragraph to edit it — changes save automatically in the current language; use ↺ Reset to restore a default.");
+        "Click a badge panel to add or replace its image (hover it and click ✕ Remove to clear it). Click any heading or paragraph to edit it — saved in the current language. Use \"+ Add card\" to add a new service card, or 🗑 to delete one.");
       hint.style.display = "none";
       bar.appendChild(toggle);
       bar.appendChild(hint);
+      setupAddTiles();
 
       fileInput = document.createElement("input");
       fileInput.type = "file";
@@ -370,6 +501,8 @@
 
   function showReset(node) {
     var key = node.getAttribute("data-i18n");
+    // Admin-created card text has no built-in default, so "reset" doesn't apply.
+    if (/^c_[a-z0-9]{6,}:(h|p)$/.test(key)) { hideReset(); return; }
     if (!window.gpContent.hasOverride(window.gpContent.getLang(), key)) { hideReset(); return; }
     clearTimeout(hideTimer);
     resetTarget = node;
@@ -478,7 +611,8 @@
       icos[i].addEventListener("mouseenter", onIcoEnter);
       icos[i].addEventListener("mouseleave", onIcoLeave);
     }
-    loadBadges(icos);
+    loadBadges();
+    loadCards();
     checkSession();
   });
 })();

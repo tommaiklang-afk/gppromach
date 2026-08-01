@@ -42,6 +42,15 @@ const HTML_ALLOWED_TAGS = { br: 1, span: 1, strong: 1, em: 1, b: 1, i: 1 };
 const ALLOWED_LANGS = new Set(["en", "th"]);
 const MAX_CONTENT_LEN = 2000;
 
+// Admin-created cards live per section as an ordered list of ids in KV "cards".
+// Their text is stored in the normal content KV under keys "<id>:h" / "<id>:p",
+// and their image under the badge key "<id>", so they reuse the existing text and
+// badge pipelines. Ids look like "c_1a2b3c4d5e".
+const CARD_SECTIONS = new Set(["capabilities", "installation", "design", "trading"]);
+const CARD_ID_RE = /^c_[a-z0-9]{6,}$/;
+const DYN_CONTENT_RE = /^c_[a-z0-9]{6,}:(h|p)$/;
+const DEFAULT_CARD = { h: "New service", p: "Describe this service." };
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -52,6 +61,7 @@ export default {
       // ---- Public reads ----
       if (path === "/api/badges" && method === "GET") return getBadges(env);
       if (path === "/api/content" && method === "GET") return getContent(env);
+      if (path === "/api/cards" && method === "GET") return getCardsResponse(env);
       if (path.startsWith("/badges/") && method === "GET") {
         return getBadgeImage(path.slice("/badges/".length), env);
       }
@@ -82,6 +92,14 @@ export default {
         if (path === "/admin/content" && method === "POST") {
           if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
           return saveContent(request, env);
+        }
+        if (path === "/admin/cards/add" && method === "POST") {
+          if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
+          return addCard(request, env);
+        }
+        if (path === "/admin/cards/remove" && method === "POST") {
+          if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
+          return removeCard(request, env);
         }
         // ---- Owner-only admin management ----
         if (path === "/admin/admins" && method === "GET") {
@@ -158,6 +176,11 @@ async function removeAdmin(request, env) {
 
 // ---------------- Badges ----------------
 
+// A badge image is allowed for a fixed built-in slot or any admin-created card id.
+function isBadgeKey(key) {
+  return ALLOWED_KEYS.has(key) || CARD_ID_RE.test(key);
+}
+
 async function getBadges(env) {
   const manifest = (await env.BADGES.get("manifest", "json")) || {};
   return new Response(JSON.stringify(manifest), {
@@ -167,7 +190,7 @@ async function getBadges(env) {
 
 async function getBadgeImage(rawKey, env) {
   const key = decodeURIComponent(rawKey);
-  if (!ALLOWED_KEYS.has(key)) return new Response("Not found", { status: 404 });
+  if (!isBadgeKey(key)) return new Response("Not found", { status: 404 });
   const res = await env.BADGES.getWithMetadata("img:" + key, { type: "arrayBuffer" });
   if (!res || !res.value) return new Response("Not found", { status: 404 });
   const ct = (res.metadata && res.metadata.contentType) || "application/octet-stream";
@@ -178,7 +201,7 @@ async function getBadgeImage(rawKey, env) {
 
 async function uploadBadge(request, env) {
   const key = request.headers.get("x-badge-key") || "";
-  if (!ALLOWED_KEYS.has(key)) return json({ error: "invalid badge key" }, 400);
+  if (!isBadgeKey(key)) return json({ error: "invalid badge key" }, 400);
   const ct = (request.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
   if (!ALLOWED_TYPES.has(ct)) return json({ error: "unsupported image type" }, 415);
   const buf = await request.arrayBuffer();
@@ -195,7 +218,7 @@ async function uploadBadge(request, env) {
 
 async function deleteBadge(request, env) {
   const key = request.headers.get("x-badge-key") || "";
-  if (!ALLOWED_KEYS.has(key)) return json({ error: "invalid badge key" }, 400);
+  if (!isBadgeKey(key)) return json({ error: "invalid badge key" }, 400);
   await env.BADGES.delete("img:" + key);
   const manifest = (await env.BADGES.get("manifest", "json")) || {};
   delete manifest[key];
@@ -217,7 +240,9 @@ async function saveContent(request, env) {
   const lang = String(body.lang || "");
   const key = String(body.key || "");
   if (!ALLOWED_LANGS.has(lang)) return json({ error: "invalid language" }, 400);
-  if (!ALLOWED_CONTENT_KEYS.has(key)) return json({ error: "invalid content key" }, 400);
+  if (!ALLOWED_CONTENT_KEYS.has(key) && !DYN_CONTENT_RE.test(key)) {
+    return json({ error: "invalid content key" }, 400);
+  }
 
   // Strip control characters (newlines, tabs) and collapse runs of whitespace.
   let raw = (typeof body.value === "string" ? body.value : "")
@@ -235,6 +260,78 @@ async function saveContent(request, env) {
   else delete content[lang][key];
   await env.BADGES.put("content", JSON.stringify(content));
   return json({ ok: true, lang, key });
+}
+
+// ---------------- Admin-created cards ----------------
+
+async function getCards(env) {
+  const c = await env.BADGES.get("cards", "json");
+  const out = {};
+  for (const s of CARD_SECTIONS) out[s] = c && Array.isArray(c[s]) ? c[s] : [];
+  return out;
+}
+
+async function getCardsResponse(env) {
+  return new Response(JSON.stringify(await getCards(env)), {
+    headers: { ...JSON_HEADERS, "cache-control": "no-cache" },
+  });
+}
+
+function randHex(n) {
+  const a = crypto.getRandomValues(new Uint8Array(n));
+  let s = "";
+  for (const b of a) s += b.toString(16).padStart(2, "0");
+  return s;
+}
+
+async function addCard(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const section = String(body.section || "");
+  if (!CARD_SECTIONS.has(section)) return json({ error: "invalid section" }, 400);
+
+  const cards = await getCards(env);
+  const id = "c_" + randHex(5);
+  cards[section].push(id);
+  await env.BADGES.put("cards", JSON.stringify(cards));
+
+  // Seed default text for both languages so the new card is never blank.
+  const content = normalizeContent(await env.BADGES.get("content", "json"));
+  for (const lang of ALLOWED_LANGS) {
+    content[lang][id + ":h"] = DEFAULT_CARD.h;
+    content[lang][id + ":p"] = DEFAULT_CARD.p;
+  }
+  await env.BADGES.put("content", JSON.stringify(content));
+
+  return json({ ok: true, id, section, h: DEFAULT_CARD.h, p: DEFAULT_CARD.p });
+}
+
+async function removeCard(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const id = String(body.id || "");
+  if (!CARD_ID_RE.test(id)) return json({ error: "invalid card id" }, 400);
+
+  const cards = await getCards(env);
+  let section = null;
+  for (const s of CARD_SECTIONS) {
+    const i = cards[s].indexOf(id);
+    if (i !== -1) { cards[s].splice(i, 1); section = s; }
+  }
+  await env.BADGES.put("cards", JSON.stringify(cards));
+
+  // Clean up the card's text overrides and any uploaded image.
+  const content = normalizeContent(await env.BADGES.get("content", "json"));
+  for (const lang of ALLOWED_LANGS) {
+    delete content[lang][id + ":h"];
+    delete content[lang][id + ":p"];
+  }
+  await env.BADGES.put("content", JSON.stringify(content));
+
+  await env.BADGES.delete("img:" + id);
+  const manifest = (await env.BADGES.get("manifest", "json")) || {};
+  delete manifest[id];
+  await env.BADGES.put("manifest", JSON.stringify(manifest));
+
+  return json({ ok: true, id, section });
 }
 
 // Reduce arbitrary HTML to a tiny allowlist: only br/span/strong/em/b/i survive,

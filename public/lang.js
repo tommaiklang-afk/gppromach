@@ -180,6 +180,10 @@
   // Admin text overrides, layered on top of the dict per language.
   var overrides = { en: {}, th: {} };
 
+  // Keys for admin-created cards ("<id>:h" / "<id>:p") have no dict default —
+  // their text is the stored override itself.
+  var DYN_RE = /^c_[a-z0-9]{6,}:(h|p)$/;
+
   var current = "en";
   try {
     var saved = localStorage.getItem("lang");
@@ -264,9 +268,11 @@
   window.gpContent = {
     getLang: function () { return current; },
     isEditable: function (key) {
+      if (DYN_RE.test(key)) return true;
       return !NON_EDITABLE[key] && dict.en[key] != null;
     },
     isHtml: function (key) { return !!HTML_KEYS[key]; },
+    refresh: function () { apply(current); },
     hasOverride: function (lang, key) {
       return !!(overrides[lang] && overrides[lang][key] != null);
     },
