@@ -241,6 +241,9 @@
       return !NON_EDITABLE[key] && dict.en[key] != null;
     },
     isHtml: function (key) { return !!HTML_KEYS[key]; },
+    hasOverride: function (lang, key) {
+      return !!(overrides[lang] && overrides[lang][key] != null);
+    },
     setOverride: function (lang, key, value) {
       if (!overrides[lang]) overrides[lang] = {};
       if (value != null && value !== "") overrides[lang][key] = value;

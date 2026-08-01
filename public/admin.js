@@ -89,7 +89,7 @@
         setTextEditing(editMode);
       });
       var hint = el("span", "admin-hint",
-        "Click a badge to upload an image. Click any heading or paragraph to edit it (saves automatically in the current language). Clear a field to restore its default.");
+        "Click a badge to upload an image. Click any heading or paragraph to edit it (saves automatically in the current language). Hover an edited field and click ↺ Reset to restore its default.");
       hint.style.display = "none";
       bar.appendChild(toggle);
       bar.appendChild(hint);
@@ -221,6 +221,9 @@
         node.classList.remove("saving");
         if (res && res.ok) {
           window.gpContent.setOverride(lang, key, value);
+          // Keep the blur baseline in sync so a still-focused field (e.g. after a
+          // reset) doesn't re-save its now-default text on the next blur.
+          if (document.activeElement === node) origText = currentVal(node);
         } else {
           setVal(node, key, prev);
           alert("Save failed: " + ((res && res.error) || "unknown error"));
@@ -244,6 +247,8 @@
         n.addEventListener("blur", onTextBlur);
         n.addEventListener("keydown", onTextKeydown);
         n.addEventListener("paste", onTextPaste);
+        n.addEventListener("mouseenter", onNodeEnter);
+        n.addEventListener("mouseleave", onNodeLeave);
       } else {
         n.removeAttribute("contenteditable");
         n.removeAttribute("spellcheck");
@@ -251,8 +256,67 @@
         n.removeEventListener("blur", onTextBlur);
         n.removeEventListener("keydown", onTextKeydown);
         n.removeEventListener("paste", onTextPaste);
+        n.removeEventListener("mouseenter", onNodeEnter);
+        n.removeEventListener("mouseleave", onNodeLeave);
       }
     }
+    if (!on) hideReset(true);
+  }
+
+  // ---- Reset-to-default chip ----
+  // A single floating button that appears over an edited field (one that currently
+  // has an override) and clears it back to the dictionary default on click.
+  var resetBtn = null;
+  var resetTarget = null;
+  var hideTimer = null;
+
+  function ensureResetBtn() {
+    if (resetBtn) return resetBtn;
+    resetBtn = document.createElement("button");
+    resetBtn.type = "button";
+    resetBtn.className = "gp-reset-btn";
+    resetBtn.textContent = "↺ Reset";
+    // Prevent the field from blurring (and saving) when the button is pressed.
+    resetBtn.addEventListener("mousedown", function (e) { e.preventDefault(); });
+    resetBtn.addEventListener("mouseenter", function () { clearTimeout(hideTimer); });
+    resetBtn.addEventListener("mouseleave", function () { hideReset(); });
+    resetBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (resetTarget) resetField(resetTarget);
+    });
+    document.body.appendChild(resetBtn);
+    return resetBtn;
+  }
+
+  function onNodeEnter() { showReset(this); }
+  function onNodeLeave() { hideReset(); }
+
+  function showReset(node) {
+    var key = node.getAttribute("data-i18n");
+    if (!window.gpContent.hasOverride(window.gpContent.getLang(), key)) { hideReset(); return; }
+    clearTimeout(hideTimer);
+    resetTarget = node;
+    var btn = ensureResetBtn();
+    btn.classList.add("show");
+    var r = node.getBoundingClientRect();
+    btn.style.left = (r.left + window.pageXOffset + r.width) + "px";
+    btn.style.top = (r.top + window.pageYOffset - 32) + "px";
+  }
+
+  function hideReset(now) {
+    clearTimeout(hideTimer);
+    if (now) { if (resetBtn) resetBtn.classList.remove("show"); resetTarget = null; return; }
+    hideTimer = setTimeout(function () {
+      if (resetBtn) resetBtn.classList.remove("show");
+      resetTarget = null;
+    }, 140);
+  }
+
+  function resetField(node) {
+    var key = node.getAttribute("data-i18n");
+    var lang = window.gpContent.getLang();
+    hideReset(true);
+    saveText(lang, key, "", currentVal(node), node);
   }
 
   // ---- Owner: manage admins ----
