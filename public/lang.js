@@ -7,6 +7,7 @@
       nav_home: "Home",
       nav_capabilities: "Services",
       nav_installation: "Installation",
+      nav_design: "Design",
       nav_trading: "Trading & Sourcing",
       nav_contact: "Contact",
 
@@ -56,6 +57,18 @@
       t4_h: "Consumables & Supplies",
       t4_p: "Everyday factory consumables and supplies kept flowing so your lines don't stop.",
 
+      design_eyebrow: "Design & Engineering",
+      design_h2: "Machines designed around your process.",
+      design_p: "Before we build or install, we design — custom machinery, equipment, and fixtures engineered to fit the way your factory works.",
+      d1_h: "Machine & Equipment Design",
+      d1_p: "Custom machine and equipment design tailored to your process and your space.",
+      d2_h: "3D CAD & Modelling",
+      d2_p: "Detailed 3D models and technical drawings, ready for fabrication.",
+      d3_h: "Concept & Prototyping",
+      d3_p: "Concept development and prototypes to prove out ideas before the full build.",
+      d4_h: "Design Consultation",
+      d4_p: "Engineering advice to improve, adapt, or upgrade your existing machinery.",
+
       foot_desc: "Installation, maintenance, building, trading, and sourcing of machinery and factory equipment. Si Racha, Chonburi, Thailand.",
       foot_company: "Company",
       foot_copy: "© 2026 GP Promach Co., Ltd. All rights reserved.",
@@ -74,6 +87,7 @@
       nav_home: "หน้าแรก",
       nav_capabilities: "บริการ",
       nav_installation: "การติดตั้ง",
+      nav_design: "ออกแบบ",
       nav_trading: "การค้าและการจัดหา",
       nav_contact: "ติดต่อ",
 
@@ -122,6 +136,18 @@
       t3_p: "ค้นหาและนำเข้าเครื่องจักรและอุปกรณ์ที่หายากให้ครบวงจร",
       t4_h: "วัสดุสิ้นเปลืองและของใช้ในโรงงาน",
       t4_p: "วัสดุสิ้นเปลืองและของใช้ในโรงงานประจำวัน จัดส่งต่อเนื่องเพื่อให้ไลน์ผลิตไม่หยุด",
+
+      design_eyebrow: "ออกแบบและวิศวกรรม",
+      design_h2: "ออกแบบเครื่องจักรให้เหมาะกับกระบวนการของคุณ",
+      design_p: "ก่อนสร้างหรือติดตั้ง เราออกแบบก่อน — เครื่องจักร อุปกรณ์ และจิ๊กเฉพาะงาน ที่ออกแบบให้เข้ากับการทำงานของโรงงานคุณ",
+      d1_h: "ออกแบบเครื่องจักรและอุปกรณ์",
+      d1_p: "ออกแบบเครื่องจักรและอุปกรณ์เฉพาะงาน ให้เหมาะกับกระบวนการและพื้นที่ของคุณ",
+      d2_h: "ออกแบบ 3D และแบบทางเทคนิค",
+      d2_p: "โมเดล 3D และแบบเขียนทางเทคนิคอย่างละเอียด พร้อมสำหรับการผลิต",
+      d3_h: "พัฒนาแนวคิดและต้นแบบ",
+      d3_p: "พัฒนาแนวคิดและสร้างต้นแบบเพื่อพิสูจน์ไอเดียก่อนลงมือสร้างจริง",
+      d4_h: "ให้คำปรึกษาด้านการออกแบบ",
+      d4_p: "ให้คำแนะนำทางวิศวกรรมเพื่อปรับปรุง ดัดแปลง หรืออัปเกรดเครื่องจักรเดิมของคุณ",
 
       foot_desc: "ติดตั้ง บำรุงรักษา สร้าง จัดจำหน่าย และจัดหาเครื่องจักรและอุปกรณ์โรงงาน ศรีราชา ชลบุรี ประเทศไทย",
       foot_company: "บริษัท",

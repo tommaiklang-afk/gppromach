@@ -10,6 +10,7 @@ const ALLOWED_KEYS = new Set([
   "capabilities-1", "capabilities-2", "capabilities-3",
   "capabilities-4", "capabilities-5", "capabilities-6",
   "installation-1", "installation-2", "installation-3", "installation-4",
+  "design-1", "design-2", "design-3", "design-4",
   "trading-1", "trading-2", "trading-3", "trading-4",
 ]);
 const ALLOWED_TYPES = new Set([
@@ -28,6 +29,8 @@ const ALLOWED_CONTENT_KEYS = new Set([
   "i1_h", "i1_p", "i2_h", "i2_p", "i3_h", "i3_p", "i4_h", "i4_p",
   "trade_eyebrow", "trade_h2", "trade_p",
   "t1_h", "t1_p", "t2_h", "t2_p", "t3_h", "t3_p", "t4_h", "t4_p",
+  "design_eyebrow", "design_h2", "design_p",
+  "d1_h", "d1_p", "d2_h", "d2_p", "d3_h", "d3_p", "d4_h", "d4_p",
   "foot_desc", "foot_company", "foot_copy",
   "contact_eyebrow", "contact_h1", "contact_p", "contact_back",
   "hero_h1", "contact_addr",
