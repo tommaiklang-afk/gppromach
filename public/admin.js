@@ -1,22 +1,21 @@
-// GP Promach — badge images + admin edit mode.
-// Public visitors: shows any uploaded badge images.
-// Admins (signed in via Google/Cloudflare Access): an edit toggle to upload/replace.
+// GP Promach — badge images + admin edit mode with roles.
+// Everyone sees uploaded badges. Signed-in Google users are "pending" until the
+// owner approves them. Owner/admins get an edit toggle; the owner can manage admins.
 (function () {
   var manifest = {};
-  var isAdmin = false;
+  var role = null;       // "owner" | "admin" | "pending" | null
+  var email = "";
   var editMode = false;
   var fileInput = null;
   var pendingKey = null;
 
-  // Give every card icon a stable key: <sectionId>-<index within section>.
   function keyedIcos() {
     var out = [];
     var sections = document.querySelectorAll("section[id]");
     for (var s = 0; s < sections.length; s++) {
       var icos = sections[s].querySelectorAll(".ico");
       for (var i = 0; i < icos.length; i++) {
-        var key = sections[s].id + "-" + (i + 1);
-        icos[i].setAttribute("data-badge", key);
+        icos[i].setAttribute("data-badge", sections[s].id + "-" + (i + 1));
         out.push(icos[i]);
       }
     }
@@ -51,66 +50,80 @@
       .catch(function () {});
   }
 
-  function checkAdmin() {
+  function checkSession() {
     return fetch("/admin/session", { redirect: "manual", cache: "no-store" })
       .then(function (r) { return r.status === 200 ? r.json() : null; })
       .then(function (data) {
-        if (data && data.admin) { isAdmin = true; buildBar(data.email); }
+        if (!data || !data.role) return;
+        role = data.role; email = data.email || "";
+        buildBar();
       })
       .catch(function () {});
   }
 
-  function buildBar(email) {
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function buildBar() {
     if (document.querySelector(".admin-bar")) return;
-    var bar = document.createElement("div");
-    bar.className = "admin-bar";
+    var bar = el("div", "admin-bar");
+    var canEdit = role === "owner" || role === "admin";
 
-    var info = document.createElement("span");
-    info.className = "admin-info";
-    info.textContent = "Admin" + (email ? " · " + email : "");
-
-    var toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "admin-btn";
-    toggle.textContent = "Turn on edit mode";
-    toggle.addEventListener("click", function () {
-      editMode = !editMode;
-      document.body.classList.toggle("edit-mode", editMode);
-      toggle.textContent = editMode ? "Turn off edit mode" : "Turn on edit mode";
-      hint.style.display = editMode ? "" : "none";
-    });
-
-    var hint = document.createElement("span");
-    hint.className = "admin-hint";
-    hint.textContent = "Click any badge to upload an image (PNG/JPG/SVG, max 2 MB).";
-    hint.style.display = "none";
-
-    var logout = document.createElement("a");
-    logout.className = "admin-link";
-    logout.href = "/cdn-cgi/access/logout";
-    logout.textContent = "Sign out";
-
+    var info = el("span", "admin-info",
+      (role === "owner" ? "Owner" : role === "admin" ? "Admin" : "Signed in") +
+      (email ? " · " + email : ""));
     bar.appendChild(info);
-    bar.appendChild(toggle);
-    bar.appendChild(hint);
+
+    if (canEdit) {
+      var toggle = el("button", "admin-btn", "Turn on edit mode");
+      toggle.type = "button";
+      toggle.addEventListener("click", function () {
+        editMode = !editMode;
+        document.body.classList.toggle("edit-mode", editMode);
+        toggle.textContent = editMode ? "Turn off edit mode" : "Turn on edit mode";
+        hint.style.display = editMode ? "" : "none";
+      });
+      var hint = el("span", "admin-hint", "Click any badge to upload an image (PNG/JPG/SVG, max 2 MB).");
+      hint.style.display = "none";
+      bar.appendChild(toggle);
+      bar.appendChild(hint);
+
+      fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = "image/png,image/jpeg,image/webp,image/gif,image/svg+xml";
+      fileInput.style.display = "none";
+      fileInput.addEventListener("change", function () {
+        var f = fileInput.files && fileInput.files[0];
+        fileInput.value = "";
+        if (f && pendingKey) upload(pendingKey, f);
+      });
+      document.body.appendChild(fileInput);
+    } else {
+      bar.appendChild(el("span", "admin-hint",
+        "You don't have edit access yet — ask the owner to approve you."));
+    }
+
+    if (role === "owner") {
+      var manage = el("button", "admin-btn admin-btn-ghost", "Manage admins");
+      manage.type = "button";
+      manage.addEventListener("click", openManage);
+      bar.appendChild(manage);
+    }
+
+    var logout = el("a", "admin-link", "Sign out");
+    logout.href = "/cdn-cgi/access/logout";
     bar.appendChild(logout);
+
     document.body.appendChild(bar);
     document.body.classList.add("has-admin-bar");
-
-    fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = "image/png,image/jpeg,image/webp,image/gif,image/svg+xml";
-    fileInput.style.display = "none";
-    fileInput.addEventListener("change", function () {
-      var f = fileInput.files && fileInput.files[0];
-      fileInput.value = "";
-      if (f && pendingKey) upload(pendingKey, f);
-    });
-    document.body.appendChild(fileInput);
   }
 
   function onIcoClick(e) {
-    if (!editMode || !isAdmin) return;
+    if (!editMode || !(role === "owner" || role === "admin")) return;
     e.preventDefault();
     pendingKey = this.getAttribute("data-badge");
     if (fileInput) fileInput.click();
@@ -141,10 +154,85 @@
       });
   }
 
+  // ---- Owner: manage admins ----
+  function openManage() {
+    var overlay = el("div", "admin-modal-overlay");
+    var panel = el("div", "admin-modal");
+    panel.appendChild(el("h3", null, "Manage admins"));
+    var body = el("div", "admin-modal-body", "Loading…");
+    panel.appendChild(body);
+
+    var addRow = el("div", "admin-add-row");
+    var input = document.createElement("input");
+    input.type = "email";
+    input.placeholder = "name@gmail.com";
+    input.className = "admin-add-input";
+    var addBtn = el("button", "admin-btn", "Add admin");
+    addBtn.type = "button";
+    addBtn.addEventListener("click", function () {
+      var e = (input.value || "").trim();
+      if (!e) return;
+      post("/admin/admins/add", { email: e }).then(function () { input.value = ""; refresh(body); });
+    });
+    addRow.appendChild(input);
+    addRow.appendChild(addBtn);
+    panel.appendChild(addRow);
+
+    var close = el("button", "admin-btn admin-btn-ghost", "Close");
+    close.type = "button";
+    close.addEventListener("click", function () { document.body.removeChild(overlay); });
+    panel.appendChild(close);
+
+    overlay.appendChild(panel);
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) document.body.removeChild(overlay); });
+    document.body.appendChild(overlay);
+    refresh(body);
+  }
+
+  function refresh(body) {
+    fetch("/admin/admins", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        body.innerHTML = "";
+        body.appendChild(sectionList("Approved admins", d.admins || [], "remove"));
+        body.appendChild(sectionList("Waiting for approval", d.requests || [], "approve"));
+        var owner = el("p", "admin-owner-note", "Owner: " + (d.owner || ""));
+        body.appendChild(owner);
+      })
+      .catch(function () { body.textContent = "Could not load."; });
+  }
+
+  function sectionList(title, emails, action) {
+    var wrap = el("div", "admin-list");
+    wrap.appendChild(el("h4", null, title));
+    if (!emails.length) { wrap.appendChild(el("p", "admin-empty", "None")); return wrap; }
+    emails.forEach(function (e) {
+      var row = el("div", "admin-row");
+      row.appendChild(el("span", null, e));
+      var btn = el("button", "admin-mini", action === "approve" ? "Approve" : "Remove");
+      btn.type = "button";
+      btn.addEventListener("click", function () {
+        var url = action === "approve" ? "/admin/admins/add" : "/admin/admins/remove";
+        post(url, { email: e }).then(function () { refresh(document.querySelector(".admin-modal-body")); });
+      });
+      row.appendChild(btn);
+      wrap.appendChild(row);
+    });
+    return wrap;
+  }
+
+  function post(url, obj) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(obj),
+    }).then(function (r) { return r.json(); });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var icos = keyedIcos();
     for (var i = 0; i < icos.length; i++) icos[i].addEventListener("click", onIcoClick);
     loadBadges(icos);
-    checkAdmin();
+    checkSession();
   });
 })();
