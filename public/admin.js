@@ -86,8 +86,10 @@
         document.body.classList.toggle("edit-mode", editMode);
         toggle.textContent = editMode ? "Turn off edit mode" : "Turn on edit mode";
         hint.style.display = editMode ? "" : "none";
+        setTextEditing(editMode);
       });
-      var hint = el("span", "admin-hint", "Click any badge to upload an image (PNG/JPG/SVG, max 2 MB).");
+      var hint = el("span", "admin-hint",
+        "Click a badge to upload an image. Click any heading or paragraph to edit it (saves automatically in the current language). Hover an edited field and click ↺ Reset to restore its default.");
       hint.style.display = "none";
       bar.appendChild(toggle);
       bar.appendChild(hint);
@@ -152,6 +154,169 @@
         if (ico) ico.classList.remove("uploading");
         alert("Upload failed: " + err.message);
       });
+  }
+
+  // ---- Inline text editing ----
+  // Editable nodes are [data-i18n] elements the shared gpContent layer marks as
+  // editable, excluding nav/brand links (so clicking a link still navigates).
+  function editableTextNodes() {
+    var out = [];
+    if (!window.gpContent) return out;
+    var nodes = document.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (!window.gpContent.isEditable(n.getAttribute("data-i18n"))) continue;
+      if (n.closest("a") || n.closest("nav")) continue;
+      out.push(n);
+    }
+    return out;
+  }
+
+  var origText = "";
+
+  // HTML keys (e.g. the hero heading) are edited as rich text — read/write innerHTML;
+  // every other key is plain text via textContent.
+  function currentVal(node) {
+    var key = node.getAttribute("data-i18n");
+    return window.gpContent.isHtml(key) ? node.innerHTML.trim() : norm(node.textContent);
+  }
+  function setVal(node, key, val) {
+    if (window.gpContent.isHtml(key)) node.innerHTML = val;
+    else node.textContent = val;
+  }
+
+  function onTextFocus() { origText = currentVal(this); }
+
+  function onTextKeydown(e) {
+    if (e.key === "Enter") { e.preventDefault(); this.blur(); }
+    else if (e.key === "Escape") {
+      setVal(this, this.getAttribute("data-i18n"), origText);
+      this.blur();
+    }
+  }
+
+  function onTextPaste(e) {
+    e.preventDefault();
+    var t = ((e.clipboardData || window.clipboardData).getData("text") || "");
+    document.execCommand("insertText", false, t);
+  }
+
+  function onTextBlur() {
+    var key = this.getAttribute("data-i18n");
+    var value = currentVal(this);
+    var prev = origText;
+    if (value === prev) return;
+    var lang = window.gpContent.getLang();
+    // Clearing a field out restores the default (removes the override).
+    if (!norm(this.textContent)) { saveText(lang, key, "", prev, this); return; }
+    saveText(lang, key, value, prev, this);
+  }
+
+  function norm(s) { return (s || "").replace(/\s+/g, " ").trim(); }
+
+  function saveText(lang, key, value, prev, node) {
+    node.classList.add("saving");
+    post("/admin/content", { lang: lang, key: key, value: value })
+      .then(function (res) {
+        node.classList.remove("saving");
+        if (res && res.ok) {
+          window.gpContent.setOverride(lang, key, value);
+          // Keep the blur baseline in sync so a still-focused field (e.g. after a
+          // reset) doesn't re-save its now-default text on the next blur.
+          if (document.activeElement === node) origText = currentVal(node);
+        } else {
+          setVal(node, key, prev);
+          alert("Save failed: " + ((res && res.error) || "unknown error"));
+        }
+      })
+      .catch(function (err) {
+        node.classList.remove("saving");
+        setVal(node, key, prev);
+        alert("Save failed: " + err.message);
+      });
+  }
+
+  function setTextEditing(on) {
+    var nodes = editableTextNodes();
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (on) {
+        n.setAttribute("contenteditable", "true");
+        n.setAttribute("spellcheck", "false");
+        n.addEventListener("focus", onTextFocus);
+        n.addEventListener("blur", onTextBlur);
+        n.addEventListener("keydown", onTextKeydown);
+        n.addEventListener("paste", onTextPaste);
+        n.addEventListener("mouseenter", onNodeEnter);
+        n.addEventListener("mouseleave", onNodeLeave);
+      } else {
+        n.removeAttribute("contenteditable");
+        n.removeAttribute("spellcheck");
+        n.removeEventListener("focus", onTextFocus);
+        n.removeEventListener("blur", onTextBlur);
+        n.removeEventListener("keydown", onTextKeydown);
+        n.removeEventListener("paste", onTextPaste);
+        n.removeEventListener("mouseenter", onNodeEnter);
+        n.removeEventListener("mouseleave", onNodeLeave);
+      }
+    }
+    if (!on) hideReset(true);
+  }
+
+  // ---- Reset-to-default chip ----
+  // A single floating button that appears over an edited field (one that currently
+  // has an override) and clears it back to the dictionary default on click.
+  var resetBtn = null;
+  var resetTarget = null;
+  var hideTimer = null;
+
+  function ensureResetBtn() {
+    if (resetBtn) return resetBtn;
+    resetBtn = document.createElement("button");
+    resetBtn.type = "button";
+    resetBtn.className = "gp-reset-btn";
+    resetBtn.textContent = "↺ Reset";
+    // Prevent the field from blurring (and saving) when the button is pressed.
+    resetBtn.addEventListener("mousedown", function (e) { e.preventDefault(); });
+    resetBtn.addEventListener("mouseenter", function () { clearTimeout(hideTimer); });
+    resetBtn.addEventListener("mouseleave", function () { hideReset(); });
+    resetBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (resetTarget) resetField(resetTarget);
+    });
+    document.body.appendChild(resetBtn);
+    return resetBtn;
+  }
+
+  function onNodeEnter() { showReset(this); }
+  function onNodeLeave() { hideReset(); }
+
+  function showReset(node) {
+    var key = node.getAttribute("data-i18n");
+    if (!window.gpContent.hasOverride(window.gpContent.getLang(), key)) { hideReset(); return; }
+    clearTimeout(hideTimer);
+    resetTarget = node;
+    var btn = ensureResetBtn();
+    btn.classList.add("show");
+    var r = node.getBoundingClientRect();
+    btn.style.left = (r.left + window.pageXOffset + r.width) + "px";
+    btn.style.top = (r.top + window.pageYOffset - 32) + "px";
+  }
+
+  function hideReset(now) {
+    clearTimeout(hideTimer);
+    if (now) { if (resetBtn) resetBtn.classList.remove("show"); resetTarget = null; return; }
+    hideTimer = setTimeout(function () {
+      if (resetBtn) resetBtn.classList.remove("show");
+      resetTarget = null;
+    }, 140);
+  }
+
+  function resetField(node) {
+    var key = node.getAttribute("data-i18n");
+    var lang = window.gpContent.getLang();
+    hideReset(true);
+    saveText(lang, key, "", currentVal(node), node);
   }
 
   // ---- Owner: manage admins ----
