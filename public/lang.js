@@ -138,11 +138,40 @@
     }
   };
 
+  // Keys whose default value contains intentional markup — rendered with innerHTML.
+  // Everything else is rendered as plain text (and is safely admin-editable).
+  var HTML_KEYS = { hero_h1: 1, contact_addr: 1 };
+
+  // Keys an admin may NOT edit inline: nav labels, brand tagline, and the <title>s.
+  // Everything else in the dict is editable copy (the HTML_KEYS above are edited as
+  // rich text and sanitized server-side; all others are plain text).
+  var NON_EDITABLE = {
+    nav_home: 1, nav_capabilities: 1, nav_installation: 1,
+    nav_trading: 1, nav_contact: 1, nav_tagline: 1,
+    title_home: 1, title_contact: 1,
+  };
+
+  // Admin text overrides, layered on top of the dict per language.
+  var overrides = { en: {}, th: {} };
+
   var current = "en";
   try {
     var saved = localStorage.getItem("lang");
     if (saved === "en" || saved === "th") current = saved;
   } catch (e) {}
+
+  function effective(lang, key) {
+    var o = overrides[lang];
+    if (o && o[key] != null) return o[key];
+    var table = dict[lang] || dict.en;
+    return table[key];
+  }
+
+  function render(node, key, val) {
+    if (val == null) return;
+    if (HTML_KEYS[key]) node.innerHTML = val;
+    else node.textContent = val;
+  }
 
   function apply(lang) {
     current = lang;
@@ -152,7 +181,7 @@
     var nodes = document.querySelectorAll("[data-i18n]");
     for (var i = 0; i < nodes.length; i++) {
       var key = nodes[i].getAttribute("data-i18n");
-      if (table[key] != null) nodes[i].innerHTML = table[key];
+      render(nodes[i], key, effective(lang, key));
     }
 
     var titleKey = document.body.getAttribute("data-title");
@@ -191,8 +220,41 @@
     });
   }
 
+  function loadContent() {
+    return fetch("/api/content", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d) return;
+        overrides.en = d.en && typeof d.en === "object" ? d.en : {};
+        overrides.th = d.th && typeof d.th === "object" ? d.th : {};
+        apply(current);
+      })
+      .catch(function () {});
+  }
+
+  // Shared API for the admin edit layer (admin.js). Lets the editor read the
+  // active language, ask which keys are editable, and push saved text back into
+  // the in-memory overrides so every node with that key re-renders immediately.
+  window.gpContent = {
+    getLang: function () { return current; },
+    isEditable: function (key) {
+      return !NON_EDITABLE[key] && dict.en[key] != null;
+    },
+    isHtml: function (key) { return !!HTML_KEYS[key]; },
+    setOverride: function (lang, key, value) {
+      if (!overrides[lang]) overrides[lang] = {};
+      if (value != null && value !== "") overrides[lang][key] = value;
+      else delete overrides[lang][key];
+      if (lang === current) {
+        var nodes = document.querySelectorAll('[data-i18n="' + key + '"]');
+        for (var i = 0; i < nodes.length; i++) render(nodes[i], key, effective(current, key));
+      }
+    },
+  };
+
   document.addEventListener("DOMContentLoaded", function () {
     apply(current);
+    loadContent();
     var buttons = document.querySelectorAll("[data-lang-toggle]");
     for (var k = 0; k < buttons.length; k++) {
       buttons[k].addEventListener("click", function () {

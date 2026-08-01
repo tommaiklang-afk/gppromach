@@ -17,6 +17,28 @@ const ALLOWED_TYPES = new Set([
 ]);
 const MAX_BYTES = 2 * 1024 * 1024;
 
+// Editable text keys (must match the i18n keys in public/lang.js). Kept as a
+// fixed allowlist so an admin can only overwrite known copy, never inject new keys.
+const ALLOWED_CONTENT_KEYS = new Set([
+  "hero_eyebrow", "hero_p", "hero_cta", "hero_link",
+  "cap_eyebrow", "cap_h2", "cap_p",
+  "c1_h", "c1_p", "c2_h", "c2_p", "c3_h", "c3_p",
+  "c4_h", "c4_p", "c5_h", "c5_p", "c6_h", "c6_p",
+  "inst_eyebrow", "inst_h2", "inst_p",
+  "i1_h", "i1_p", "i2_h", "i2_p", "i3_h", "i3_p", "i4_h", "i4_p",
+  "trade_eyebrow", "trade_h2", "trade_p",
+  "t1_h", "t1_p", "t2_h", "t2_p", "t3_h", "t3_p", "t4_h", "t4_p",
+  "foot_desc", "foot_company", "foot_copy",
+  "contact_eyebrow", "contact_h1", "contact_p", "contact_back",
+  "hero_h1", "contact_addr",
+]);
+// Keys whose default carries intentional markup. Their overrides are sanitized to
+// a tiny tag/attribute allowlist instead of being flattened to plain text.
+const HTML_CONTENT_KEYS = new Set(["hero_h1", "contact_addr"]);
+const HTML_ALLOWED_TAGS = { br: 1, span: 1, strong: 1, em: 1, b: 1, i: 1 };
+const ALLOWED_LANGS = new Set(["en", "th"]);
+const MAX_CONTENT_LEN = 2000;
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -24,8 +46,9 @@ export default {
     const method = request.method;
 
     try {
-      // ---- Public badge reads ----
+      // ---- Public reads ----
       if (path === "/api/badges" && method === "GET") return getBadges(env);
+      if (path === "/api/content" && method === "GET") return getContent(env);
       if (path.startsWith("/badges/") && method === "GET") {
         return getBadgeImage(path.slice("/badges/".length), env);
       }
@@ -52,6 +75,10 @@ export default {
         if (path === "/admin/delete" && method === "POST") {
           if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
           return deleteBadge(request, env);
+        }
+        if (path === "/admin/content" && method === "POST") {
+          if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
+          return saveContent(request, env);
         }
         // ---- Owner-only admin management ----
         if (path === "/admin/admins" && method === "GET") {
@@ -171,6 +198,74 @@ async function deleteBadge(request, env) {
   delete manifest[key];
   await env.BADGES.put("manifest", JSON.stringify(manifest));
   return json({ ok: true, key });
+}
+
+// ---------------- Editable text content ----------------
+
+async function getContent(env) {
+  const content = normalizeContent(await env.BADGES.get("content", "json"));
+  return new Response(JSON.stringify(content), {
+    headers: { ...JSON_HEADERS, "cache-control": "no-cache" },
+  });
+}
+
+async function saveContent(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const lang = String(body.lang || "");
+  const key = String(body.key || "");
+  if (!ALLOWED_LANGS.has(lang)) return json({ error: "invalid language" }, 400);
+  if (!ALLOWED_CONTENT_KEYS.has(key)) return json({ error: "invalid content key" }, 400);
+
+  // Strip control characters (newlines, tabs) and collapse runs of whitespace.
+  let raw = (typeof body.value === "string" ? body.value : "")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (raw.length > MAX_CONTENT_LEN) return json({ error: "text too long" }, 413);
+
+  // HTML keys keep a safe subset of markup; everything else is stored verbatim and
+  // rendered on the client with textContent (so it can never inject markup).
+  const value = HTML_CONTENT_KEYS.has(key) && raw ? await sanitizeHtml(raw) : raw;
+
+  const content = normalizeContent(await env.BADGES.get("content", "json"));
+  if (value) content[lang][key] = value;
+  else delete content[lang][key];
+  await env.BADGES.put("content", JSON.stringify(content));
+  return json({ ok: true, lang, key });
+}
+
+// Reduce arbitrary HTML to a tiny allowlist: only br/span/strong/em/b/i survive,
+// spans keep a class="accent" and nothing else, all other tags are unwrapped, and
+// script/style are dropped entirely. Uses the Workers-native HTMLRewriter parser.
+async function sanitizeHtml(input) {
+  const rewriter = new HTMLRewriter().on("*", {
+    element(el) {
+      const tag = el.tagName;
+      if (tag === "script" || tag === "style") { el.remove(); return; }
+      if (!HTML_ALLOWED_TAGS[tag]) { el.removeAndKeepContent(); return; }
+      const names = [];
+      for (const attr of el.attributes) names.push(attr[0]);
+      for (const name of names) {
+        if (tag === "span" && name === "class") continue;
+        el.removeAttribute(name);
+      }
+      if (tag === "span" && el.getAttribute("class") !== "accent") {
+        el.removeAttribute("class");
+      }
+    },
+  });
+  const out = rewriter.transform(
+    new Response(input, { headers: { "content-type": "text/html" } })
+  );
+  return (await out.text()).trim();
+}
+
+function normalizeContent(v) {
+  const c = v && typeof v === "object" ? v : {};
+  return {
+    en: c.en && typeof c.en === "object" ? c.en : {},
+    th: c.th && typeof c.th === "object" ? c.th : {},
+  };
 }
 
 function json(obj, status = 200) {

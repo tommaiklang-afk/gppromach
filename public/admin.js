@@ -86,8 +86,10 @@
         document.body.classList.toggle("edit-mode", editMode);
         toggle.textContent = editMode ? "Turn off edit mode" : "Turn on edit mode";
         hint.style.display = editMode ? "" : "none";
+        setTextEditing(editMode);
       });
-      var hint = el("span", "admin-hint", "Click any badge to upload an image (PNG/JPG/SVG, max 2 MB).");
+      var hint = el("span", "admin-hint",
+        "Click a badge to upload an image. Click any heading or paragraph to edit it (saves automatically in the current language). Clear a field to restore its default.");
       hint.style.display = "none";
       bar.appendChild(toggle);
       bar.appendChild(hint);
@@ -152,6 +154,105 @@
         if (ico) ico.classList.remove("uploading");
         alert("Upload failed: " + err.message);
       });
+  }
+
+  // ---- Inline text editing ----
+  // Editable nodes are [data-i18n] elements the shared gpContent layer marks as
+  // editable, excluding nav/brand links (so clicking a link still navigates).
+  function editableTextNodes() {
+    var out = [];
+    if (!window.gpContent) return out;
+    var nodes = document.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (!window.gpContent.isEditable(n.getAttribute("data-i18n"))) continue;
+      if (n.closest("a") || n.closest("nav")) continue;
+      out.push(n);
+    }
+    return out;
+  }
+
+  var origText = "";
+
+  // HTML keys (e.g. the hero heading) are edited as rich text — read/write innerHTML;
+  // every other key is plain text via textContent.
+  function currentVal(node) {
+    var key = node.getAttribute("data-i18n");
+    return window.gpContent.isHtml(key) ? node.innerHTML.trim() : norm(node.textContent);
+  }
+  function setVal(node, key, val) {
+    if (window.gpContent.isHtml(key)) node.innerHTML = val;
+    else node.textContent = val;
+  }
+
+  function onTextFocus() { origText = currentVal(this); }
+
+  function onTextKeydown(e) {
+    if (e.key === "Enter") { e.preventDefault(); this.blur(); }
+    else if (e.key === "Escape") {
+      setVal(this, this.getAttribute("data-i18n"), origText);
+      this.blur();
+    }
+  }
+
+  function onTextPaste(e) {
+    e.preventDefault();
+    var t = ((e.clipboardData || window.clipboardData).getData("text") || "");
+    document.execCommand("insertText", false, t);
+  }
+
+  function onTextBlur() {
+    var key = this.getAttribute("data-i18n");
+    var value = currentVal(this);
+    var prev = origText;
+    if (value === prev) return;
+    var lang = window.gpContent.getLang();
+    // Clearing a field out restores the default (removes the override).
+    if (!norm(this.textContent)) { saveText(lang, key, "", prev, this); return; }
+    saveText(lang, key, value, prev, this);
+  }
+
+  function norm(s) { return (s || "").replace(/\s+/g, " ").trim(); }
+
+  function saveText(lang, key, value, prev, node) {
+    node.classList.add("saving");
+    post("/admin/content", { lang: lang, key: key, value: value })
+      .then(function (res) {
+        node.classList.remove("saving");
+        if (res && res.ok) {
+          window.gpContent.setOverride(lang, key, value);
+        } else {
+          setVal(node, key, prev);
+          alert("Save failed: " + ((res && res.error) || "unknown error"));
+        }
+      })
+      .catch(function (err) {
+        node.classList.remove("saving");
+        setVal(node, key, prev);
+        alert("Save failed: " + err.message);
+      });
+  }
+
+  function setTextEditing(on) {
+    var nodes = editableTextNodes();
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (on) {
+        n.setAttribute("contenteditable", "true");
+        n.setAttribute("spellcheck", "false");
+        n.addEventListener("focus", onTextFocus);
+        n.addEventListener("blur", onTextBlur);
+        n.addEventListener("keydown", onTextKeydown);
+        n.addEventListener("paste", onTextPaste);
+      } else {
+        n.removeAttribute("contenteditable");
+        n.removeAttribute("spellcheck");
+        n.removeEventListener("focus", onTextFocus);
+        n.removeEventListener("blur", onTextBlur);
+        n.removeEventListener("keydown", onTextKeydown);
+        n.removeEventListener("paste", onTextPaste);
+      }
+    }
   }
 
   // ---- Owner: manage admins ----
