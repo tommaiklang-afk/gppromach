@@ -4,11 +4,13 @@
 (function () {
   var manifest = {};
   var cards = {};        // { section: [cardId, ...] } — admin-created cards
+  var hiddenStatic = []; // badge keys of built-in cards hidden by an admin
   var role = null;       // "owner" | "admin" | "pending" | null
   var email = "";
   var editMode = false;
   var fileInput = null;
   var pendingKey = null;
+  var restoreBtn = null;
 
   var CARD_SECTIONS = ["capabilities", "installation", "design", "trading"];
 
@@ -59,7 +61,14 @@
   function loadCards() {
     return fetch("/api/cards", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) { if (d) { cards = d; renderAllCards(); } })
+      .then(function (d) {
+        if (!d) return;
+        hiddenStatic = Array.isArray(d.hidden) ? d.hidden : [];
+        cards = d;
+        renderAllCards();
+        applyHidden();
+        updateRestoreBtn();
+      })
       .catch(function () {});
   }
 
@@ -94,17 +103,76 @@
     p.setAttribute("data-i18n", id + ":p");
     card.appendChild(p);
 
+    card.appendChild(makeDelButton(function () { removeCard(id, card); }));
+    return card;
+  }
+
+  function makeDelButton(handler) {
     var del = el("button", "gp-card-del", "🗑");
     del.type = "button";
     del.title = "Delete this card";
     del.addEventListener("click", function (e) {
       e.preventDefault();
       e.stopPropagation();
-      removeCard(id, card);
+      handler();
     });
-    card.appendChild(del);
+    return del;
+  }
 
-    return card;
+  // Built-in cards: add a delete control (edit mode) that hides them site-wide.
+  function setupStaticDelete() {
+    var staticCards = document.querySelectorAll("section[id] .card:not([data-dyn])");
+    for (var i = 0; i < staticCards.length; i++) {
+      var cardEl = staticCards[i];
+      if (cardEl.querySelector(".gp-card-del")) continue;
+      var ico = cardEl.querySelector(".ico[data-badge]");
+      if (!ico) continue;
+      wireStaticDelete(cardEl, ico.getAttribute("data-badge"));
+    }
+  }
+  function wireStaticDelete(cardEl, key) {
+    cardEl.appendChild(makeDelButton(function () { hideStaticCard(key, cardEl); }));
+  }
+
+  // Remove built-in cards that are on the hidden list (for every visitor).
+  function applyHidden() {
+    for (var i = 0; i < hiddenStatic.length; i++) {
+      var ico = document.querySelector('.ico[data-badge="' + hiddenStatic[i] + '"]');
+      var card = ico && ico.closest(".card");
+      if (card && card.parentNode) card.parentNode.removeChild(card);
+    }
+  }
+
+  function hideStaticCard(key, cardEl) {
+    if (!window.confirm("Delete this card? You can restore deleted cards from the admin bar.")) return;
+    post("/admin/cards/hide", { key: key })
+      .then(function (res) {
+        if (!res || !res.ok) { alert("Delete failed: " + ((res && res.error) || "unknown error")); return; }
+        if (hiddenStatic.indexOf(key) === -1) hiddenStatic.push(key);
+        if (cardEl && cardEl.parentNode) cardEl.parentNode.removeChild(cardEl);
+        updateRestoreBtn();
+      })
+      .catch(function (err) { alert("Delete failed: " + err.message); });
+  }
+
+  function updateRestoreBtn() {
+    if (!restoreBtn) return;
+    var n = hiddenStatic.length;
+    if (n > 0) {
+      restoreBtn.textContent = "Restore " + n + " deleted card" + (n > 1 ? "s" : "");
+      restoreBtn.style.display = "";
+    } else {
+      restoreBtn.style.display = "none";
+    }
+  }
+
+  function restoreAll() {
+    post("/admin/cards/unhide", {})
+      .then(function (res) {
+        if (res && res.ok) window.location.reload();
+        else alert("Restore failed: " + ((res && res.error) || "unknown error"));
+      })
+      .catch(function (err) { alert("Restore failed: " + err.message); });
   }
 
   // Re-render all dynamic cards from the current `cards` state.
@@ -220,11 +288,19 @@
         if (!editMode) hideBadgeBtn(true);
       });
       var hint = el("span", "admin-hint",
-        "Click a badge panel to add or replace its image (hover it and click ✕ Remove to clear it). Click any heading or paragraph to edit it — saved in the current language. Use \"+ Add card\" to add a new service card, or 🗑 to delete one.");
+        "Click a badge panel to add or replace its image (hover it and click ✕ Remove to clear it). Click any heading or paragraph to edit it — saved in the current language. Use \"+ Add card\" to add a card, or 🗑 to delete any card (deleted built-in cards can be restored from this bar).");
       hint.style.display = "none";
       bar.appendChild(toggle);
       bar.appendChild(hint);
       setupAddTiles();
+      setupStaticDelete();
+
+      restoreBtn = el("button", "admin-btn admin-btn-ghost", "");
+      restoreBtn.type = "button";
+      restoreBtn.style.display = "none";
+      restoreBtn.addEventListener("click", restoreAll);
+      bar.appendChild(restoreBtn);
+      updateRestoreBtn();
 
       fileInput = document.createElement("input");
       fileInput.type = "file";

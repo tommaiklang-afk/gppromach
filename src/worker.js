@@ -101,6 +101,14 @@ export default {
           if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
           return removeCard(request, env);
         }
+        if (path === "/admin/cards/hide" && method === "POST") {
+          if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
+          return hideCard(request, env);
+        }
+        if (path === "/admin/cards/unhide" && method === "POST") {
+          if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
+          return unhideCard(request, env);
+        }
         // ---- Owner-only admin management ----
         if (path === "/admin/admins" && method === "GET") {
           if (role !== "owner") return json({ error: "owner only" }, 403);
@@ -272,9 +280,33 @@ async function getCards(env) {
 }
 
 async function getCardsResponse(env) {
-  return new Response(JSON.stringify(await getCards(env)), {
+  const out = await getCards(env);
+  out.hidden = await getHidden(env);
+  return new Response(JSON.stringify(out), {
     headers: { ...JSON_HEADERS, "cache-control": "no-cache" },
   });
+}
+
+// Built-in cards can't be removed from the HTML, so "deleting" one records its
+// badge key in a hidden list; the client drops those cards for every visitor.
+async function getHidden(env) {
+  const h = await env.BADGES.get("hidden", "json");
+  return Array.isArray(h) ? h : [];
+}
+
+async function hideCard(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const key = String(body.key || "");
+  if (!ALLOWED_KEYS.has(key)) return json({ error: "invalid card key" }, 400);
+  const hidden = await getHidden(env);
+  if (hidden.indexOf(key) === -1) hidden.push(key);
+  await env.BADGES.put("hidden", JSON.stringify(hidden));
+  return json({ ok: true, key });
+}
+
+async function unhideCard(_request, env) {
+  await env.BADGES.put("hidden", JSON.stringify([]));
+  return json({ ok: true });
 }
 
 function randHex(n) {
