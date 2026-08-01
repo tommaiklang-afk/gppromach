@@ -11,7 +11,7 @@
     { "binding": "BADGES", "id": "19fa2b6021114cd9b33ac5417b787666" }
   ],
   "vars": {
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": ""
+    "ACCESS_TEAM_DOMAIN": "honey-waffle.cloudflareaccess.com",
+    "ACCESS_AUD": "971d18251b720f5c44b71ca1e63f7385db2a8738ef876038603e34d0035e5c4d"
   }
 }
