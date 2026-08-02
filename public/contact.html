@@ -131,7 +131,10 @@
   .admin-add-input{flex:1;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:.95rem}
   .admin-empty{color:var(--ink-soft);font-size:.9rem}
   .admin-owner-note{color:var(--ink-soft);font-size:.85rem;margin-top:16px}
-  .admin-modal .admin-btn{margin-top:16px}
+  .admin-modal .admin-btn{display:inline-block;background:var(--red);color:#fff;border:0;border-radius:100px;padding:11px 22px;font-size:.9rem;font-weight:600;font-family:inherit;cursor:pointer;margin-top:16px;transition:transform .15s ease,background .2s}
+  .admin-modal .admin-btn:hover{background:var(--red-deep);transform:translateY(-1px)}
+  .admin-modal .admin-btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .admin-modal .admin-btn-ghost:hover{background:var(--bg-alt);border-color:var(--ink-soft);transform:translateY(-1px)}
   .cat-body{margin:6px 0 4px}
   .cat-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
   .cat-link{flex:1;color:var(--ink);font-weight:500;font-size:.95rem;text-decoration:none;word-break:break-word}
