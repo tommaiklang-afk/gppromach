@@ -330,6 +330,14 @@
 
     var logout = el("a", "admin-link", "Sign out");
     logout.href = "/cdn-cgi/access/logout";
+    // Clear the Access session, then return to the home page instead of showing
+    // Cloudflare's logout screen.
+    logout.addEventListener("click", function (e) {
+      e.preventDefault();
+      fetch("/cdn-cgi/access/logout", { cache: "no-store", credentials: "include" })
+        .catch(function () {})
+        .then(function () { window.location.replace("/"); });
+    });
     bar.appendChild(logout);
 
     document.body.appendChild(bar);
