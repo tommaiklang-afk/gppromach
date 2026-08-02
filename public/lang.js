@@ -281,21 +281,39 @@
     var toggle = document.querySelector(".menu-toggle");
     var links = document.querySelector(".navlinks");
     if (!toggle || !links) return;
+
+    // Reset the inline styles back to the stylesheet: closes the menu on mobile,
+    // and is a no-op on desktop (where the nav is shown via CSS).
+    function closeMenu() {
+      links.style.display = "";
+      links.style.position = "";
+      links.style.flexDirection = "";
+      links.style.top = "";
+      links.style.left = "";
+      links.style.right = "";
+      links.style.background = "";
+      links.style.padding = "";
+      links.style.gap = "";
+      links.style.borderBottom = "";
+    }
+
     toggle.addEventListener("click", function () {
-      var open = links.style.display === "flex";
-      links.style.display = open ? "none" : "flex";
-      if (!open) {
-        links.style.position = "absolute";
-        links.style.flexDirection = "column";
-        links.style.top = "64px";
-        links.style.left = "0";
-        links.style.right = "0";
-        links.style.background = "#fff";
-        links.style.padding = "18px 24px";
-        links.style.gap = "18px";
-        links.style.borderBottom = "1px solid var(--line)";
-      }
+      if (links.style.display === "flex") { closeMenu(); return; }
+      links.style.display = "flex";
+      links.style.position = "absolute";
+      links.style.flexDirection = "column";
+      links.style.top = "64px";
+      links.style.left = "0";
+      links.style.right = "0";
+      links.style.background = "#fff";
+      links.style.padding = "18px 24px";
+      links.style.gap = "18px";
+      links.style.borderBottom = "1px solid var(--line)";
     });
+
+    // Close the open menu once a nav item is tapped.
+    var items = links.querySelectorAll("a");
+    for (var i = 0; i < items.length; i++) items[i].addEventListener("click", closeMenu);
   }
 
   function loadContent() {
