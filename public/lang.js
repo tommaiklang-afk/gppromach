@@ -89,6 +89,9 @@
       p2_th: "สมพงษ์ รักนา",
       p2_phone: "092-152-2226",
       p2_email: "pongrakna99@gmail.com",
+      foot_c1: "099-326-9632 · Ekkaphong",
+      foot_c2: "092-152-2226 · Sompong",
+      foot_c3: "ekkaphongdm@gmail.com",
 
       title_home: "GP Promach — Machinery & Factory Equipment",
       title_contact: "Contact — GP Promach"
@@ -180,6 +183,9 @@
       p2_th: "สมพงษ์ รักนา",
       p2_phone: "092-152-2226",
       p2_email: "pongrakna99@gmail.com",
+      foot_c1: "099-326-9632 · Ekkaphong",
+      foot_c2: "092-152-2226 · Sompong",
+      foot_c3: "ekkaphongdm@gmail.com",
 
       title_home: "GP Promach — เครื่องจักรและอุปกรณ์โรงงาน",
       title_contact: "ติดต่อ — GP Promach"
@@ -234,8 +240,11 @@
       if (!span) continue;
       var val = (span.textContent || "").trim();
       if (!val) continue;
-      if (a.getAttribute("data-link") === "tel") a.href = "tel:" + val.replace(/[^0-9+]/g, "");
-      else if (a.getAttribute("data-link") === "mail") a.href = "mailto:" + val;
+      if (a.getAttribute("data-link") === "tel") {
+        var digits = val.replace(/[^0-9+]/g, "");
+        if (digits.charAt(0) === "0") digits = "+66" + digits.slice(1); // Thai local -> intl
+        a.href = "tel:" + digits;
+      } else if (a.getAttribute("data-link") === "mail") a.href = "mailto:" + val;
     }
   }
 
