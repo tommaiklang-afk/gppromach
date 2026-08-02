@@ -309,7 +309,11 @@
       fileInput.addEventListener("change", function () {
         var f = fileInput.files && fileInput.files[0];
         fileInput.value = "";
-        if (f && pendingKey) upload(pendingKey, f);
+        if (!f || !pendingKey) return;
+        var key = pendingKey;
+        var ico = document.querySelector('.ico[data-badge="' + key + '"]');
+        if (ico) ico.classList.add("uploading"); // covers the resize step too
+        processImage(f).then(function (blob) { upload(key, blob); });
       });
       document.body.appendChild(fileInput);
     } else {
@@ -339,8 +343,46 @@
     if (fileInput) fileInput.click();
   }
 
+  var MAX_UPLOAD = 2 * 1024 * 1024;
+
+  // Downscale + compress oversized raster images in the browser so uploads fit the
+  // 2 MB limit. SVGs and already-small files pass through untouched.
+  function processImage(file) {
+    return new Promise(function (resolve) {
+      if (file.type === "image/svg+xml" || file.size <= MAX_UPLOAD) { resolve(file); return; }
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        var maxDim = 1600;
+        var s = Math.min(1, maxDim / Math.max(img.width, img.height));
+        var w = Math.max(1, Math.round(img.width * s));
+        var h = Math.max(1, Math.round(img.height * s));
+        var target = 1.8 * 1024 * 1024;
+        var type = "image/webp";
+        function attempt(cw, ch, q) {
+          var c = document.createElement("canvas");
+          c.width = cw; c.height = ch;
+          c.getContext("2d").drawImage(img, 0, 0, cw, ch);
+          c.toBlob(function (blob) {
+            if (!blob) { // browser can't encode webp -> try jpeg, else give up
+              if (type === "image/webp") { type = "image/jpeg"; attempt(cw, ch, q); return; }
+              resolve(file); return;
+            }
+            if (blob.size <= target || (q <= 0.45 && Math.max(cw, ch) <= 900)) { resolve(blob); return; }
+            if (q > 0.5) attempt(cw, ch, q - 0.1);
+            else attempt(Math.round(cw * 0.85), Math.round(ch * 0.85), 0.6);
+          }, type, q);
+        }
+        attempt(w, h, 0.85);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+
   function upload(key, file) {
-    if (file.size > 2 * 1024 * 1024) { alert("Image too large — max 2 MB."); return; }
+    if (file.size > MAX_UPLOAD) { alert("Image too large — max 2 MB."); return; }
     var ico = document.querySelector('.ico[data-badge="' + key + '"]');
     if (ico) ico.classList.add("uploading");
     fetch("/admin/upload", {
