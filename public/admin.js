@@ -255,8 +255,137 @@
         if (!data || !data.role) return;
         role = data.role; email = data.email || "";
         buildBar();
+        updateCatalogNav();
       })
       .catch(function () {});
+  }
+
+  // ---- Catalogs (downloadable files in the nav) ----
+  var catalogs = [];
+  var catInput = null;
+
+  function isEditor() { return role === "owner" || role === "admin"; }
+
+  function loadCatalogs() {
+    return fetch("/api/catalogs", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (list) { catalogs = Array.isArray(list) ? list : []; updateCatalogNav(); })
+      .catch(function () {});
+  }
+
+  // Show the nav button if there are catalogs, or the viewer is an editor (to upload).
+  function updateCatalogNav() {
+    var show = catalogs.length > 0 || isEditor();
+    var links = document.querySelectorAll(".nav-catalogs");
+    for (var i = 0; i < links.length; i++) links[i].style.display = show ? "" : "none";
+  }
+
+  function setupCatalogs() {
+    catInput = document.createElement("input");
+    catInput.type = "file";
+    catInput.accept = ".pdf,.jpg,.jpeg,.png,.ppt,.pptx,.doc,.docx";
+    catInput.style.display = "none";
+    catInput.addEventListener("change", function () {
+      var f = catInput.files && catInput.files[0];
+      catInput.value = "";
+      if (f) uploadCatalog(f);
+    });
+    document.body.appendChild(catInput);
+
+    var links = document.querySelectorAll(".nav-catalogs");
+    for (var i = 0; i < links.length; i++) {
+      links[i].addEventListener("click", function (e) { e.preventDefault(); openCatalogModal(); });
+    }
+  }
+
+  function openCatalogModal() {
+    var overlay = el("div", "admin-modal-overlay");
+    var panel = el("div", "admin-modal");
+    panel.appendChild(el("h3", null, "Catalogs"));
+    var body = el("div", "cat-body");
+    panel.appendChild(body);
+    renderCatalogList(body);
+
+    if (isEditor()) {
+      var up = el("button", "admin-btn", "Upload catalog");
+      up.type = "button";
+      up.addEventListener("click", function () { if (catInput) catInput.click(); });
+      panel.appendChild(up);
+      panel.appendChild(el("p", "admin-owner-note",
+        "PDF, JPG, PNG, PPT, PPTX, DOC or DOCX · up to 20 MB."));
+    }
+
+    var close = el("button", "admin-btn admin-btn-ghost", "Close");
+    close.type = "button";
+    close.addEventListener("click", function () { document.body.removeChild(overlay); });
+    panel.appendChild(close);
+
+    overlay.appendChild(panel);
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) document.body.removeChild(overlay); });
+    document.body.appendChild(overlay);
+  }
+
+  function renderCatalogList(body) {
+    body.innerHTML = "";
+    if (!catalogs.length) { body.appendChild(el("p", "admin-empty", "No catalogs yet.")); return; }
+    catalogs.forEach(function (c) {
+      var row = el("div", "cat-row");
+      var link = el("a", "cat-link", c.name);
+      link.href = "/catalogs/" + encodeURIComponent(c.id);
+      link.target = "_blank";
+      link.rel = "noopener";
+      row.appendChild(link);
+      row.appendChild(el("span", "cat-ext", (c.ext || "").toUpperCase()));
+      if (isEditor()) {
+        var del = el("button", "admin-mini", "Remove");
+        del.type = "button";
+        del.addEventListener("click", function () { removeCatalog(c.id, body); });
+        row.appendChild(del);
+      }
+      body.appendChild(row);
+    });
+  }
+
+  function uploadCatalog(file) {
+    if (file.size > 20 * 1024 * 1024) { alert("File too large — max 20 MB."); return; }
+    var body = document.querySelector(".cat-body");
+    if (body) { body.innerHTML = ""; body.appendChild(el("p", "admin-empty", "Uploading " + file.name + "…")); }
+    fetch("/admin/catalogs/upload", {
+      method: "POST",
+      headers: { "x-catalog-name": encodeURIComponent(file.name), "content-type": file.type || "application/octet-stream" },
+      body: file,
+    })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        var b = document.querySelector(".cat-body");
+        if (res.ok && res.j && res.j.ok) {
+          catalogs.push({ id: res.j.id, name: res.j.name, ext: res.j.ext, size: res.j.size, updatedAt: res.j.updatedAt });
+          if (b) renderCatalogList(b);
+          updateCatalogNav();
+        } else {
+          if (b) renderCatalogList(b);
+          alert("Upload failed: " + ((res.j && res.j.error) || "unknown error"));
+        }
+      })
+      .catch(function (err) {
+        var b = document.querySelector(".cat-body"); if (b) renderCatalogList(b);
+        alert("Upload failed: " + err.message);
+      });
+  }
+
+  function removeCatalog(id, body) {
+    if (!window.confirm("Remove this catalog?")) return;
+    post("/admin/catalogs/remove", { id: id })
+      .then(function (res) {
+        if (res && res.ok) {
+          catalogs = catalogs.filter(function (c) { return c.id !== id; });
+          renderCatalogList(body);
+          updateCatalogNav();
+        } else {
+          alert("Remove failed: " + ((res && res.error) || "unknown error"));
+        }
+      })
+      .catch(function (err) { alert("Remove failed: " + err.message); });
   }
 
   function el(tag, cls, text) {
@@ -750,6 +879,8 @@
     }
     loadBadges();
     loadCards();
+    setupCatalogs();
+    loadCatalogs();
     checkSession();
   });
 })();

@@ -54,6 +54,18 @@ const CARD_ID_RE = /^c_[a-z0-9]{6,}$/;
 const DYN_CONTENT_RE = /^c_[a-z0-9]{6,}:(h|p)$/;
 const DEFAULT_CARD = { h: "New service", p: "Describe this service." };
 
+// Downloadable catalogs: admins upload files, visitors view/download them.
+const CAT_ID_RE = /^cat_[a-z0-9]{6,}$/;
+const ALLOWED_CAT_EXT = new Set(["pdf", "jpg", "jpeg", "png", "ppt", "pptx", "doc", "docx"]);
+const CAT_MIME = {
+  pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+};
+const MAX_CAT_BYTES = 20 * 1024 * 1024;
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -65,8 +77,12 @@ export default {
       if (path === "/api/badges" && method === "GET") return getBadges(env);
       if (path === "/api/content" && method === "GET") return getContent(env);
       if (path === "/api/cards" && method === "GET") return getCardsResponse(env);
+      if (path === "/api/catalogs" && method === "GET") return getCatalogsResponse(env);
       if (path.startsWith("/badges/") && method === "GET") {
         return getBadgeImage(path.slice("/badges/".length), env);
+      }
+      if (path.startsWith("/catalogs/") && method === "GET") {
+        return serveCatalog(path.slice("/catalogs/".length), env);
       }
 
       // ---- Admin (Cloudflare Access protected at the edge) ----
@@ -111,6 +127,14 @@ export default {
         if (path === "/admin/cards/unhide" && method === "POST") {
           if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
           return unhideCard(request, env);
+        }
+        if (path === "/admin/catalogs/upload" && method === "POST") {
+          if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
+          return uploadCatalog(request, env);
+        }
+        if (path === "/admin/catalogs/remove" && method === "POST") {
+          if (role === "pending") return json({ error: "you don't have edit access yet" }, 403);
+          return removeCatalog(request, env);
         }
         // ---- Owner-only admin management ----
         if (path === "/admin/admins" && method === "GET") {
@@ -310,6 +334,67 @@ async function hideCard(request, env) {
 async function unhideCard(_request, env) {
   await env.BADGES.put("hidden", JSON.stringify([]));
   return json({ ok: true });
+}
+
+// ---------------- Catalogs ----------------
+
+async function getCatalogs(env) {
+  const v = await env.BADGES.get("catalogs", "json");
+  return Array.isArray(v) ? v : [];
+}
+
+async function getCatalogsResponse(env) {
+  return new Response(JSON.stringify(await getCatalogs(env)), {
+    headers: { ...JSON_HEADERS, "cache-control": "no-cache" },
+  });
+}
+
+async function serveCatalog(rawId, env) {
+  const id = decodeURIComponent(rawId);
+  if (!CAT_ID_RE.test(id)) return new Response("Not found", { status: 404 });
+  const res = await env.BADGES.getWithMetadata("catfile:" + id, { type: "arrayBuffer" });
+  if (!res || !res.value) return new Response("Not found", { status: 404 });
+  const m = res.metadata || {};
+  const name = m.name || "catalog";
+  const asciiName = name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");
+  return new Response(res.value, {
+    headers: {
+      "content-type": m.contentType || "application/octet-stream",
+      "content-disposition":
+        'inline; filename="' + asciiName + "\"; filename*=UTF-8''" + encodeURIComponent(name),
+      "cache-control": "public, max-age=3600",
+    },
+  });
+}
+
+async function uploadCatalog(request, env) {
+  const name = decodeURIComponent(request.headers.get("x-catalog-name") || "").trim().slice(0, 150);
+  const ext = (name.split(".").pop() || "").toLowerCase();
+  if (!name || !ALLOWED_CAT_EXT.has(ext)) return json({ error: "unsupported file type" }, 415);
+  const buf = await request.arrayBuffer();
+  if (buf.byteLength === 0) return json({ error: "empty file" }, 400);
+  if (buf.byteLength > MAX_CAT_BYTES) return json({ error: "file too large (max 20 MB)" }, 413);
+
+  const contentType = CAT_MIME[ext] || "application/octet-stream";
+  const updatedAt = Date.now();
+  const id = "cat_" + randHex(5);
+  await env.BADGES.put("catfile:" + id, buf, {
+    metadata: { name, contentType, size: buf.byteLength, updatedAt },
+  });
+  const list = await getCatalogs(env);
+  list.push({ id, name, ext, size: buf.byteLength, updatedAt });
+  await env.BADGES.put("catalogs", JSON.stringify(list));
+  return json({ ok: true, id, name, ext, size: buf.byteLength, updatedAt });
+}
+
+async function removeCatalog(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const id = String(body.id || "");
+  if (!CAT_ID_RE.test(id)) return json({ error: "invalid id" }, 400);
+  await env.BADGES.delete("catfile:" + id);
+  const list = (await getCatalogs(env)).filter((c) => c.id !== id);
+  await env.BADGES.put("catalogs", JSON.stringify(list));
+  return json({ ok: true, id });
 }
 
 function randHex(n) {

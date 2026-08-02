@@ -9,6 +9,7 @@
       nav_installation: "Installation",
       nav_design: "Design",
       nav_trading: "Trading & Sourcing",
+      nav_catalogs: "Catalogs",
       nav_contact: "Contact",
 
       hero_eyebrow: "Machinery & factory equipment",
@@ -103,6 +104,7 @@
       nav_installation: "การติดตั้ง",
       nav_design: "ออกแบบ",
       nav_trading: "การค้าและการจัดหา",
+      nav_catalogs: "แคตตาล็อก",
       nav_contact: "ติดต่อ",
 
       hero_eyebrow: "เครื่องจักรและอุปกรณ์โรงงาน",
