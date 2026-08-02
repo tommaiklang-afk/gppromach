@@ -79,6 +79,17 @@
       contact_addr: '<strong>GP Promach Co., Ltd.</strong><br />115/58 Moo 10, Nong Kham, Si Racha, Chonburi 20230, Thailand',
       contact_back: "← Back to home",
 
+      p1_role: "Contact",
+      p1_name: "Ekkaphong Rotruedi",
+      p1_th: "เอกพงศ์ รอดฤดี",
+      p1_phone: "099-326-9632",
+      p1_email: "ekkaphongdm@gmail.com",
+      p2_role: "Contact",
+      p2_name: "Sompong Rakna",
+      p2_th: "สมพงษ์ รักนา",
+      p2_phone: "092-152-2226",
+      p2_email: "pongrakna99@gmail.com",
+
       title_home: "GP Promach — Machinery & Factory Equipment",
       title_contact: "Contact — GP Promach"
     },
@@ -159,6 +170,17 @@
       contact_addr: '<strong>บริษัท จีพี โปรแมค จำกัด</strong><br />115/58 หมู่ 10 ตำบลหนองขาม อำเภอศรีราชา จังหวัดชลบุรี 20230 ประเทศไทย',
       contact_back: "← กลับหน้าแรก",
 
+      p1_role: "ติดต่อ",
+      p1_name: "Ekkaphong Rotruedi",
+      p1_th: "เอกพงศ์ รอดฤดี",
+      p1_phone: "099-326-9632",
+      p1_email: "ekkaphongdm@gmail.com",
+      p2_role: "ติดต่อ",
+      p2_name: "Sompong Rakna",
+      p2_th: "สมพงษ์ รักนา",
+      p2_phone: "092-152-2226",
+      p2_email: "pongrakna99@gmail.com",
+
       title_home: "GP Promach — เครื่องจักรและอุปกรณ์โรงงาน",
       title_contact: "ติดต่อ — GP Promach"
     }
@@ -203,6 +225,20 @@
     else node.textContent = val;
   }
 
+  // Keep contact tel:/mailto: links pointing at their (possibly edited) text.
+  function updateLinks() {
+    var links = document.querySelectorAll("a[data-link]");
+    for (var i = 0; i < links.length; i++) {
+      var a = links[i];
+      var span = a.querySelector("[data-i18n]");
+      if (!span) continue;
+      var val = (span.textContent || "").trim();
+      if (!val) continue;
+      if (a.getAttribute("data-link") === "tel") a.href = "tel:" + val.replace(/[^0-9+]/g, "");
+      else if (a.getAttribute("data-link") === "mail") a.href = "mailto:" + val;
+    }
+  }
+
   function apply(lang) {
     current = lang;
     var table = dict[lang] || dict.en;
@@ -213,6 +249,7 @@
       var key = nodes[i].getAttribute("data-i18n");
       render(nodes[i], key, effective(lang, key));
     }
+    updateLinks();
 
     var titleKey = document.body.getAttribute("data-title");
     if (titleKey && table[titleKey]) document.title = table[titleKey];
@@ -283,6 +320,7 @@
       if (lang === current) {
         var nodes = document.querySelectorAll('[data-i18n="' + key + '"]');
         for (var i = 0; i < nodes.length; i++) render(nodes[i], key, effective(current, key));
+        updateLinks();
       }
     },
   };

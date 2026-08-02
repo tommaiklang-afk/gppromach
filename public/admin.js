@@ -450,7 +450,10 @@
     for (var i = 0; i < nodes.length; i++) {
       var n = nodes[i];
       if (!window.gpContent.isEditable(n.getAttribute("data-i18n"))) continue;
-      if (n.closest("a") || n.closest("nav")) continue;
+      if (n.closest("nav")) continue;
+      // Skip nodes inside links, except the editable phone/email in contact cards.
+      var a = n.closest("a");
+      if (a && !a.classList.contains("contact-link")) continue;
       out.push(n);
     }
     return out;
@@ -544,8 +547,16 @@
         n.removeEventListener("mouseleave", onNodeLeave);
       }
     }
+    // Don't follow contact tel:/mailto: links while their text is being edited.
+    var links = document.querySelectorAll("a.contact-link");
+    for (var j = 0; j < links.length; j++) {
+      if (on) links[j].addEventListener("click", preventInEdit);
+      else links[j].removeEventListener("click", preventInEdit);
+    }
     if (!on) hideReset(true);
   }
+
+  function preventInEdit(e) { if (editMode) e.preventDefault(); }
 
   // ---- Reset-to-default chip ----
   // A single floating button that appears over an edited field (one that currently

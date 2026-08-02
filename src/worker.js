@@ -33,6 +33,8 @@ const ALLOWED_CONTENT_KEYS = new Set([
   "d1_h", "d1_p", "d2_h", "d2_p", "d3_h", "d3_p", "d4_h", "d4_p",
   "foot_desc", "foot_company", "foot_copy",
   "contact_eyebrow", "contact_h1", "contact_p", "contact_back",
+  "p1_role", "p1_name", "p1_th", "p1_phone", "p1_email",
+  "p2_role", "p2_name", "p2_th", "p2_phone", "p2_email",
   "hero_h1", "contact_addr",
 ]);
 // Keys whose default carries intentional markup. Their overrides are sanitized to
