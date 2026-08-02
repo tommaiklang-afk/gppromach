@@ -93,6 +93,7 @@
       foot_c1: "099-326-9632 · Ekkaphong",
       foot_c2: "092-152-2226 · Sompong",
       foot_c3: "ekkaphongdm@gmail.com",
+      foot_c4: "pongrakna99@gmail.com",
 
       title_home: "GP Promach — Machinery & Factory Equipment",
       title_contact: "Contact — GP Promach"
@@ -188,6 +189,7 @@
       foot_c1: "099-326-9632 · Ekkaphong",
       foot_c2: "092-152-2226 · Sompong",
       foot_c3: "ekkaphongdm@gmail.com",
+      foot_c4: "pongrakna99@gmail.com",
 
       title_home: "GP Promach — เครื่องจักรและอุปกรณ์โรงงาน",
       title_contact: "ติดต่อ — GP Promach"
